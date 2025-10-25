@@ -1,1 +1,29 @@
+CREATE TABLE TACGIA (
+    maTacGia VARCHAR(255) PRIMARY KEY NOT NULL, -- Khóa chính
+    tenTacGia NVARCHAR(255) NOT NULL,          -- Tên tác giả (để hiển thị, có thể khác maTacGia sau này)
+    email VARCHAR(255) NULL,                   -- Email (có thể null)
+    sdt VARCHAR(20) NULL,                      -- Số điện thoại (có thể null)
+    trinhDoChuyenMon NVARCHAR(MAX) NULL,       -- Trình độ chuyên môn (có thể null, text dài)
+    chucDanh NVARCHAR(255) NULL                -- Chức danh (có thể null)
+);
+GO
 
+-- Phần 1: Chèn các tác giả duy nhất từ bảng SACH vào bảng TACGIA
+-- Lệnh này sẽ bỏ qua nếu tên tác giả đã tồn tại trong TACGIA (do là khóa chính)
+INSERT INTO TACGIA (tenTacGia)
+SELECT DISTINCT tacGia
+FROM SACH
+WHERE tacGia IS NOT NULL AND tacGia <> ''
+AND tacGia NOT IN (SELECT tenTacGia FROM TACGIA); -- Chỉ thêm nếu chưa có
+GO
+
+-- Phần 2: Tạo ràng buộc khóa ngoại trên bảng SACH
+-- Đảm bảo cột SACH.tacGia có kiểu dữ liệu khớp với TACGIA.tenTacGia (NVARCHAR(255))
+-- Nếu kiểu dữ liệu khác, bạn cần ALTER COLUMN trước khi thêm constraint.
+-- Ví dụ: ALTER TABLE SACH ALTER COLUMN tacGia NVARCHAR(255) NULL; (chạy nếu cần)
+
+ALTER TABLE SACH
+ADD CONSTRAINT FK_Sach_TacGia_Ten FOREIGN KEY (tacGia) REFERENCES TACGIA(tenTacGia)
+    ON DELETE SET NULL -- Nếu xóa tác giả, sách sẽ có tacGia là NULL
+    ON UPDATE CASCADE; -- Nếu tên tác giả (khóa chính) thay đổi, cập nhật trong sách
+GO
