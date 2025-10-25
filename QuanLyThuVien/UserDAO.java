@@ -42,6 +42,61 @@ public class UserDAO {
         return null;
     }
 
+    // ===================================================================
+    // === PHƯƠNG THỨC MỚI: KIỂM TRA MẬT KHẨU CŨ (ĐỂ KHÔNG BỊ LỖI) ===
+    // ===================================================================
+    /**
+     * Kiểm tra mật khẩu cũ có khớp với mật khẩu trong DB không.
+     * @param tenDangNhap Tên đăng nhập
+     * @param oldPassword Mật khẩu cũ (plain text)
+     * @return true nếu mật khẩu cũ khớp, false nếu không khớp hoặc lỗi.
+     */
+    public boolean kiemTraMatKhauCu(String tenDangNhap, String oldPassword) {
+        String sql = "SELECT tenDangNhap FROM NGUOIDUNG WHERE tenDangNhap = ? AND matKhau = ?";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, tenDangNhap);
+            pstmt.setString(2, oldPassword);
+            
+            ResultSet rs = pstmt.executeQuery();
+            
+            return rs.next(); // Nếu tìm thấy một hàng, mật khẩu cũ là đúng
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    // ===================================================================
+    // === PHƯƠNG THỨC MỚI: ĐỔI MẬT KHẨU (ĐỂ KHÔNG BỊ LỖI) ===
+    // ===================================================================
+    /**
+     * Cập nhật mật khẩu mới cho người dùng.
+     * @param tenDangNhap Tên đăng nhập
+     * @param newPassword Mật khẩu mới (plain text)
+     * @return true nếu cập nhật thành công, false nếu thất bại.
+     */
+    public boolean doiMatKhau(String tenDangNhap, String newPassword) {
+        String sql = "UPDATE NGUOIDUNG SET matKhau = ? WHERE tenDangNhap = ?";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, newPassword); 
+            pstmt.setString(2, tenDangNhap); 
+
+            return pstmt.executeUpdate() > 0; // Trả về true nếu có ít nhất 1 dòng được cập nhật
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
     /**
      * Thêm một tài khoản người dùng mới
      */
