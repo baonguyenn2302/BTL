@@ -3,39 +3,56 @@ package QuanLyThuVien;
 import java.util.Date; // Import Date
 
 /**
- * Lớp Model (POJO) đại diện cho đối tượng Sách (Đã cập nhật đầy đủ)
+ * Lớp Model (POJO) đại diện cho đối tượng Sách.
+ * Đã cập nhật để sử dụng maTacGia thay vì tên tác giả trực tiếp.
  */
 public class Sach {
 
-    // Thuộc tính cũ (9)
+    // Thuộc tính
     private String maSach;
     private String tenSach;
-    private String tacGia;
+    private String maTacGia; // <<< THAY ĐỔI: Giờ là Mã Tác Giả (Khóa ngoại)
     private String nhaXuatBan;
     private int namXuatBan;
     private int soLuong;
     private String moTa;
     private String duongDanAnh;
     private String duongDanXemTruoc;
-
-    // Thuộc tính mới (3)
     private Date ngayThem;
     private int luotXem;
     private int luotTai;
 
-    // Constructor rỗng
+    // --- Constructors ---
+
+    /**
+     * Constructor rỗng.
+     */
     public Sach() {
         this.luotXem = 0;
         this.luotTai = 0;
     }
 
-    // Constructor đầy đủ (12 thuộc tính)
-    public Sach(String maSach, String tenSach, String tacGia, String nhaXuatBan,
+    /**
+     * Constructor đầy đủ (với maTacGia).
+     * @param maSach Mã sách
+     * @param tenSach Tên sách
+     * @param maTacGia Mã tác giả (tham chiếu đến bảng TACGIA) // <<< THAY ĐỔI
+     * @param nhaXuatBan Nhà xuất bản
+     * @param namXuatBan Năm xuất bản
+     * @param soLuong Số lượng
+     * @param moTa Mô tả
+     * @param duongDanAnh Đường dẫn ảnh bìa
+     * @param duongDanXemTruoc Đường dẫn file xem trước
+     * @param ngayThem Ngày thêm vào hệ thống
+     * @param luotXem Số lượt xem
+     * @param luotTai Số lượt tải
+     */
+    public Sach(String maSach, String tenSach, String maTacGia, String nhaXuatBan, // <<< THAY ĐỔI
                 int namXuatBan, int soLuong, String moTa, String duongDanAnh, String duongDanXemTruoc,
                 Date ngayThem, int luotXem, int luotTai) {
         this.maSach = maSach;
         this.tenSach = tenSach;
-        this.tacGia = tacGia;
+        this.maTacGia = maTacGia; // <<< THAY ĐỔI
         this.nhaXuatBan = nhaXuatBan;
         this.namXuatBan = namXuatBan;
         this.soLuong = soLuong;
@@ -47,14 +64,18 @@ public class Sach {
         this.luotTai = luotTai;
     }
 
-    // --- Getters and Setters (cho tất cả 12 thuộc tính) ---
+    // --- Getters and Setters ---
 
     public String getMaSach() { return maSach; }
     public void setMaSach(String maSach) { this.maSach = maSach; }
     public String getTenSach() { return tenSach; }
     public void setTenSach(String tenSach) { this.tenSach = tenSach; }
-    public String getTacGia() { return tacGia; }
-    public void setTacGia(String tacGia) { this.tacGia = tacGia; }
+
+    // <<< THAY ĐỔI GETTER/SETTER CHO TÁC GIẢ >>>
+    public String getMaTacGia() { return maTacGia; }
+    public void setMaTacGia(String maTacGia) { this.maTacGia = maTacGia; }
+    // <<< KẾT THÚC THAY ĐỔI >>>
+
     public String getNhaXuatBan() { return nhaXuatBan; }
     public void setNhaXuatBan(String nhaXuatBan) { this.nhaXuatBan = nhaXuatBan; }
     public int getNamXuatBan() { return namXuatBan; }
@@ -79,6 +100,15 @@ public class Sach {
 
     @Override
     public String toString() {
-        return "Sach{" + "maSach='" + maSach + '\'' + ", tenSach='" + tenSach + '\'' + ", luotXem=" + luotXem + ", luotTai=" + luotTai + '}';
+        return "Sach{" +
+               "maSach='" + maSach + '\'' +
+               ", tenSach='" + tenSach + '\'' +
+               ", maTacGia='" + maTacGia + '\'' + // <<< THAY ĐỔI
+               ", nhaXuatBan='" + nhaXuatBan + '\'' +
+               ", namXuatBan=" + namXuatBan +
+               ", soLuong=" + soLuong +
+               ", luotXem=" + luotXem +
+               ", luotTai=" + luotTai +
+               '}';
     }
 }
