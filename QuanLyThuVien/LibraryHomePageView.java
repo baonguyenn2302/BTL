@@ -174,33 +174,67 @@ public class LibraryHomePageView extends JFrame {
     // --- Các Phương thức tiện ích ---
 
     // === SỬA: Thêm tham số "sectionID" ===
+    /**
+     * === SỬA: Biến JLabel tiêu đề thành JButton ===
+     */
     private JPanel createSidebarSection(String title, String sectionID, String[] itemsToDisplay, Color titleColor, String[] actionCommands) {
         JPanel panel = new JPanel(); panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        JLabel titleLabel = new JLabel(title); titleLabel.setFont(new Font("Arial", Font.BOLD, 14)); titleLabel.setForeground(Color.WHITE); titleLabel.setOpaque(true); titleLabel.setBackground(titleColor); titleLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT); titleLabel.setMaximumSize(new Dimension(Integer.MAX_VALUE, titleLabel.getPreferredSize().height)); panel.add(titleLabel);
+        
+        // === BẮT ĐẦU SỬA ĐỔI ===
+        // Thay JLabel bằng JButton để có thể click
+        JButton titleButton = new JButton(title);
+        titleButton.setFont(new Font("Arial", Font.BOLD, 14));
+        titleButton.setForeground(Color.WHITE);
+        titleButton.setOpaque(true);
+        titleButton.setBackground(titleColor);
+        titleButton.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        titleButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        titleButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, titleButton.getPreferredSize().height));
+        
+        // Căn lề trái cho chữ
+        titleButton.setHorizontalAlignment(SwingConstants.LEFT);
+        // Bỏ viền focus
+        titleButton.setFocusPainted(false);
+        // Bỏ viền nút để trông giống JLabel
+        titleButton.setBorderPainted(false);
+        titleButton.setContentAreaFilled(false);
+        titleButton.setOpaque(true);
+        titleButton.setBackground(titleColor);
+
+        // Gán sự kiện CHỈ cho nút "Hồ sơ tác giả"
+        if ("AUTHORS".equals(sectionID)) {
+            titleButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            
+            // *** ĐÂY LÀ THAY ĐỔI THEO YÊU CẦU MỚI ***
+            // Gọi hàm "Duyệt theo Tác giả" (bản đầy đủ)
+            titleButton.addActionListener(e -> showBrowseByAuthorView());
+        }
+        
+        panel.add(titleButton); // Thêm nút tiêu đề vào panel
+        // === KẾT THÚC SỬA ĐỔI ===
+
         Border buttonBorder = BorderFactory.createCompoundBorder( BorderFactory.createLineBorder(Color.LIGHT_GRAY), BorderFactory.createEmptyBorder(10, 5, 10, 5));
 
         for (int i = 0; i < itemsToDisplay.length; i++) {
             JButton btn = new JButton(itemsToDisplay[i]);
+            // ... (Phần code còn lại của vòng lặp for giữ nguyên) ...
             btn.setFocusPainted(false); btn.setBorder(buttonBorder); btn.setBackground(new Color(240, 240, 240)); btn.setForeground(Color.BLUE.darker()); btn.setHorizontalAlignment(SwingConstants.LEFT); btn.setAlignmentX(Component.LEFT_ALIGNMENT); btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, btn.getPreferredSize().height));
 
-            // === SỬA: Logic gán sự kiện ===
             if ("BROWSE".equals(sectionID)) {
-                // Gán sự kiện cho các nút "Duyệt theo"
                 if ("Năm xuất bản".equals(itemsToDisplay[i])) {
                     btn.addActionListener(e -> showBrowseByYearView());
                 }
-                // --- THÊM MỚI SỰ KIỆN CHO "NHAN ĐỀ" ---
                 else if ("Nhan đề".equals(itemsToDisplay[i])) {
                     btn.addActionListener(e -> showBrowseByTitleView());
                 }
-                // (Bạn có thể thêm else if cho "Tác giả", "Chủ đề" tại đây sau)
-
+                else if ("Tác giả".equals(itemsToDisplay[i])) {
+                    // Nút "Tác giả" trong "Duyệt theo"
+                    btn.addActionListener(e -> showBrowseByAuthorView());
+                }
             } else if ("AUTHORS".equals(sectionID) && actionCommands != null && i < actionCommands.length) {
-                // Giữ nguyên logic cho Hồ sơ tác giả
                 final String authorName = actionCommands[i];
                 btn.addActionListener(e -> showAuthorProfileView(authorName));
             }
-            // === KẾT THÚC SỬA ===
 
             panel.add(btn);
         }
@@ -314,7 +348,28 @@ public class LibraryHomePageView extends JFrame {
      * Tạo Panel (GUI) cho Hồ sơ Tác giả, sử dụng TacGiaDAO.
      */
     private JPanel createAuthorProfilePanel(String authorName) {
-        JPanel profilePanel = new JPanel(new BorderLayout(10, 10)); profilePanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15)); profilePanel.setBackground(Color.WHITE); JPanel topPanel = new JPanel(new BorderLayout()); topPanel.setOpaque(false); JButton btnBack = new JButton("< Quay lại"); btnBack.setFont(new Font("Segoe UI", Font.BOLD, 12)); btnBack.setFocusPainted(false); btnBack.addActionListener(e -> showGalleryView()); topPanel.add(btnBack, BorderLayout.WEST); profilePanel.add(topPanel, BorderLayout.NORTH); JPanel contentPanel = new JPanel(new BorderLayout(0, 15)); contentPanel.setOpaque(false); JPanel authorInfoPanel = new JPanel(new BorderLayout(10, 5)); authorInfoPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0)); authorInfoPanel.setOpaque(false); JLabel lblAuthorName = new JLabel(authorName); lblAuthorName.setFont(new Font("Segoe UI", Font.BOLD, 20)); lblAuthorName.setForeground(Color.WHITE); lblAuthorName.setOpaque(true); lblAuthorName.setBackground(new Color(0, 153, 204)); lblAuthorName.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10)); authorInfoPanel.add(lblAuthorName, BorderLayout.NORTH); 
+        JPanel profilePanel = new JPanel(new BorderLayout(10, 10));
+        profilePanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15)); 
+        profilePanel.setBackground(Color.WHITE); 
+        JPanel topPanel = new JPanel(new BorderLayout()); 
+        topPanel.setOpaque(false);
+        JButton btnBack = new JButton("< Quay lại");
+        btnBack.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnBack.setFocusPainted(false);
+        btnBack.addActionListener(e -> showBrowseByAuthorView()); 
+        topPanel.add(btnBack, BorderLayout.WEST);
+        profilePanel.add(topPanel, BorderLayout.NORTH);
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 15));
+        contentPanel.setOpaque(false);
+        JPanel authorInfoPanel = new JPanel(new BorderLayout(10, 5));
+        authorInfoPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0)); 
+        authorInfoPanel.setOpaque(false); JLabel lblAuthorName = new JLabel(authorName);
+        lblAuthorName.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        lblAuthorName.setForeground(Color.WHITE);
+        lblAuthorName.setOpaque(true);
+        lblAuthorName.setBackground(new Color(0, 153, 204));
+        lblAuthorName.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10)); 
+        authorInfoPanel.add(lblAuthorName, BorderLayout.NORTH); 
         
         JPanel detailInfoPanel = new JPanel(); 
         detailInfoPanel.setLayout(new BoxLayout(detailInfoPanel, BoxLayout.Y_AXIS)); 
@@ -763,10 +818,337 @@ public class LibraryHomePageView extends JFrame {
             updateBookListView();
         }
     }
+    // =========================================================================
+    // === PHƯƠNG THỨC MỚI CHO "DUYỆT THEO TÁC GIẢ" (YÊU CẦU MỚI) ===
+    // =========================================================================
 
+    /**
+     * (MỚI) Hiển thị giao diện "Duyệt theo Tác giả"
+     */
+    private void showBrowseByAuthorView() {
+        // 1. Reset trạng thái
+        currentBookPage = 1; // Dùng lại biến trang
+        currentSortBy = "authorName"; // Sắp xếp theo tên tác giả
+        currentSortOrder = "ASC";
+        currentFilterType = ""; // "AUTHOR_PREFIX" hoặc "AUTHOR_CONTAINS"
+        currentFilterValue = "";
+
+        // 2. Tạo Panel chính
+        JPanel mainBrowsePanel = new JPanel(new BorderLayout(10, 10));
+        mainBrowsePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // 3. (NORTH) Panel Tiêu đề và Lọc
+        JPanel northPanel = new JPanel(new BorderLayout(0, 10));
+        JLabel title = new JLabel("Tìm kiếm theo: Tác giả");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        title.setForeground(new Color(51, 51, 51));
+        northPanel.add(title, BorderLayout.NORTH);
+
+        // --- GIAO DIỆN LỌC (A-Z và Ô tìm kiếm) ---
+        JPanel filterBar = new JPanel(new BorderLayout(5, 0));
+        
+        // Panel cho A-Z
+        JPanel alphabetPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
+        alphabetPanel.add(new JLabel("Duyệt theo: "));
+        // Thêm "0-9"
+        alphabetPanel.add(createAuthorFilterLink("0-9"));
+        // Thêm A-Z
+        for (char c = 'A'; c <= 'Z'; c++) {
+            alphabetPanel.add(createAuthorFilterLink(String.valueOf(c)));
+        }
+        northPanel.add(alphabetPanel, BorderLayout.CENTER); // Đặt A-Z lên trên
+
+        // Panel cho Ô tìm kiếm
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        searchPanel.add(new JLabel("Hoặc nhập từ khóa (tên):"));
+        final JTextField authorSearchField = new JTextField(15);
+        searchPanel.add(authorSearchField);
+        
+        JButton findButton = new JButton("Tìm kiếm");
+        JButton viewAllButton = new JButton("Xem tất cả");
+        searchPanel.add(findButton);
+        searchPanel.add(viewAllButton);
+        
+        filterBar.add(searchPanel, BorderLayout.WEST); // Ô tìm kiếm bên trái
+
+        // Nút sắp xếp
+        JButton sortButton = new JButton("⚙️ Sắp xếp");
+        JPanel sortPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        sortPanel.add(sortButton);
+        filterBar.add(sortPanel, BorderLayout.EAST); // Nút sắp xếp bên phải
+
+        northPanel.add(filterBar, BorderLayout.SOUTH); // Đặt thanh tìm kiếm/sắp xếp ở dưới
+        mainBrowsePanel.add(northPanel, BorderLayout.NORTH);
+
+        // 4. (CENTER) Panel chứa danh sách sách (Sử dụng lại)
+        // LƯU Ý: Chúng ta tái sử dụng 'bookListContainerPanel'
+        bookListContainerPanel = new JPanel(new BorderLayout());
+        mainBrowsePanel.add(bookListContainerPanel, BorderLayout.CENTER);
+
+        // 5. (SOUTH) Panel phân trang (Sử dụng lại)
+        JPanel paginationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton prevButton = new JButton("< Trang trước");
+        JButton nextButton = new JButton("Trang sau >");
+        // LƯU Ý: Chúng ta tái sử dụng 'paginationLabel'
+        paginationLabel = new JLabel("Trang 1 / 1"); 
+        paginationPanel.add(prevButton);
+        paginationPanel.add(Box.createHorizontalStrut(10));
+        paginationPanel.add(paginationLabel);
+        paginationPanel.add(Box.createHorizontalStrut(10));
+        paginationPanel.add(nextButton);
+        mainBrowsePanel.add(paginationPanel, BorderLayout.SOUTH);
+
+        // 6. Gán sự kiện
+        // Tìm kiếm theo "từ khóa" (CONTAINS)
+        findButton.addActionListener(e -> {
+            String keyword = authorSearchField.getText().trim();
+            if (!keyword.isEmpty()) {
+                currentBookPage = 1;
+                currentFilterType = "AUTHOR_CONTAINS"; // Lọc chứa từ
+                currentFilterValue = keyword;
+                updateAuthorListView();
+            }
+        });
+
+        // Xem tất cả
+        viewAllButton.addActionListener(e -> {
+            authorSearchField.setText("");
+            currentBookPage = 1;
+            currentFilterType = "";
+            currentFilterValue = "";
+            updateAuthorListView();
+        });
+
+        // Phân trang
+        prevButton.addActionListener(e -> { 
+            if (currentBookPage > 1) { 
+                currentBookPage--; 
+                updateAuthorListView(); 
+            } 
+        });
+        nextButton.addActionListener(e -> {
+            int totalItems = sachDAO.getAuthorCount(currentFilterType, currentFilterValue);
+            // Sử dụng hằng số ITEMS_PER_LIST_PAGE (là 10)
+            int totalPages = (int) Math.ceil((double) totalItems / ITEMS_PER_LIST_PAGE);
+            if (currentBookPage < totalPages) { 
+                currentBookPage++; 
+                updateAuthorListView(); 
+            }
+        });
+        
+        // Sắp xếp
+        sortButton.addActionListener(e -> showAuthorSortDialog());
+
+        // 7. Thay thế giao diện trung tâm
+        Component centerComponent = ((BorderLayout)mainContentPanel.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+        if (centerComponent != null) mainContentPanel.remove(centerComponent);
+        mainContentPanel.add(mainBrowsePanel, BorderLayout.CENTER);
+        lastActiveView = mainBrowsePanel; // Cập nhật lastActiveView
+        mainContentPanel.revalidate();
+        mainContentPanel.repaint();
+
+        // 8. Tải dữ liệu lần đầu
+        updateAuthorListView();
+    }
+
+    /**
+     * (MỚI) Hàm tiện ích tạo link A-Z
+     */
+    private JLabel createAuthorFilterLink(String text) {
+        JLabel link = new JLabel(text);
+        link.setForeground(Color.BLUE.darker());
+        link.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        link.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 4));
+        link.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                currentBookPage = 1;
+                currentFilterType = "AUTHOR_PREFIX"; // Lọc theo chữ cái đầu
+                currentFilterValue = text;
+                updateAuthorListView();
+            }
+             @Override
+            public void mouseEntered(MouseEvent e) {
+                link.setText("<html><u>" + text + "</u></html>");
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                link.setText(text);
+            }
+        });
+        return link;
+    }
+
+    /**
+     * (MỚI) Cập nhật danh sách TÁC GIẢ (dùng biến trạng thái tổng quát)
+     */
+    private void updateAuthorListView() {
+        // 1. Lấy tổng số mục và tính tổng số trang
+        // Gọi DAO của tác giả
+        int totalItems = sachDAO.getAuthorCount(currentFilterType, currentFilterValue);
+        // Sử dụng hằng số ITEMS_PER_LIST_PAGE (là 10)
+        int totalPages = (int) Math.ceil((double) totalItems / ITEMS_PER_LIST_PAGE); 
+        if (totalPages == 0) totalPages = 1;
+
+        // 2. Sửa lại trang hiện tại nếu nó vượt quá
+        if (currentBookPage > totalPages) currentBookPage = totalPages;
+        if (currentBookPage < 1) currentBookPage = 1;
+
+        // 3. Cập nhật nhãn phân trang (Sử dụng lại)
+        paginationLabel.setText("Trang " + currentBookPage + " / " + totalPages + " (Tổng số " + totalItems + " tác giả)");
+
+        // 4. Lấy dữ liệu tác giả (dùng hàm DAO tổng quát)
+        // Gọi DAO của tác giả
+        List<SachDAO.AuthorInfo> authors = sachDAO.getAuthorsPaginated(
+            currentBookPage, 
+            ITEMS_PER_LIST_PAGE, // 10 item/trang
+            currentSortBy, 
+            currentSortOrder, 
+            currentFilterType, 
+            currentFilterValue
+        );
+
+        // 5. Tạo panel danh sách tác giả mới
+        JScrollPane authorListScrollPane = createAuthorListViewPanel(authors);
+
+        // 6. Cập nhật giao diện (Sử dụng lại)
+        bookListContainerPanel.removeAll();
+        bookListContainerPanel.add(authorListScrollPane, BorderLayout.CENTER);
+        bookListContainerPanel.revalidate();
+        bookListContainerPanel.repaint();
+    }
+
+    /**
+     * (MỚI) Tạo JScrollPane chứa danh sách các tác giả
+     */
+    /**
+     * (MỚI - PHIÊN BẢN CẢI TIẾN THIẾT KẾ) 
+     * Tạo JScrollPane chứa danh sách các tác giả với hiệu ứng hover.
+     */
+    private JScrollPane createAuthorListViewPanel(List<SachDAO.AuthorInfo> authorList) {
+        if (authorList == null || authorList.isEmpty()) {
+            JPanel emptyPanel = new JPanel(new GridBagLayout());
+            emptyPanel.add(new JLabel("Không tìm thấy tác giả nào."));
+            return new JScrollPane(emptyPanel);
+        }
+
+        JPanel authorItemsPanel = new JPanel();
+        authorItemsPanel.setLayout(new BoxLayout(authorItemsPanel, BoxLayout.Y_AXIS));
+        authorItemsPanel.setBackground(Color.WHITE);
+
+        for (int i = 0; i < authorList.size(); i++) {
+            SachDAO.AuthorInfo info = authorList.get(i);
+            
+            // Tạo một mục danh sách (entry)
+            JPanel entryPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8)); // Tăng padding
+            entryPanel.setBackground(Color.WHITE);
+            entryPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            entryPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45)); // Tăng chiều cao
+            entryPanel.setCursor(new Cursor(Cursor.HAND_CURSOR)); // Đặt con trỏ tay
+
+            // Tên tác giả (không gạch chân)
+            String displayText = info.authorName + " (" + info.bookCount + " sách)";
+            JLabel authorLabel = new JLabel(displayText);
+            authorLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            authorLabel.setForeground(new Color(0, 102, 153)); // Màu xanh đậm
+
+            entryPanel.add(authorLabel);
+            
+            // Thêm sự kiện hover và click cho TOÀN BỘ PANEL
+            entryPanel.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    // Gọi hàm showAuthorProfileView đã có
+                    showAuthorProfileView(info.authorName);
+                }
+
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    // Hiệu ứng hover
+                    entryPanel.setBackground(new Color(230, 245, 255)); // Màu xanh nhạt
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    entryPanel.setBackground(Color.WHITE);
+                }
+            });
+
+            authorItemsPanel.add(entryPanel);
+
+            // Thêm dòng kẻ
+            if (i < authorList.size() - 1) {
+                JSeparator sep = new JSeparator(SwingConstants.HORIZONTAL);
+                sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+                authorItemsPanel.add(sep);
+            }
+        }
+
+        authorItemsPanel.add(Box.createVerticalGlue());
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setBackground(Color.WHITE);
+        wrapperPanel.add(authorItemsPanel, BorderLayout.NORTH);
+        JScrollPane listScrollPane = new JScrollPane(wrapperPanel);
+        listScrollPane.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+        return listScrollPane;
+    }
+
+
+    /**
+     * (MỚI) Hiển thị hộp thoại (Dialog) cho phép chọn cách sắp xếp TÁC GIẢ
+     */
+    private void showAuthorSortDialog() {
+        // 1. Tạo các components cho dialog
+        JComboBox<String> cmbSortBy = new JComboBox<>(new String[]{"Tên tác giả", "Số lượng sách"});
+        JComboBox<String> cmbSortOrder = new JComboBox<>(new String[]{"Tăng dần (ASC)", "Giảm dần (DESC)"});
+
+        // 2. Đặt giá trị mặc định theo trạng thái hiện tại
+        if ("bookCount".equals(currentSortBy)) { // Sắp xếp theo số sách
+            cmbSortBy.setSelectedIndex(1);
+        } else { // "authorName"
+            cmbSortBy.setSelectedIndex(0);
+        }
+        if ("DESC".equals(currentSortOrder)) {
+            cmbSortOrder.setSelectedIndex(1);
+        } else {
+            cmbSortOrder.setSelectedIndex(0);
+        }
+
+        // 3. Tạo panel chứa các component
+        JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
+        panel.add(new JLabel("Sắp xếp theo:"));
+        panel.add(cmbSortBy);
+        panel.add(new JLabel("Thứ tự:"));
+        panel.add(cmbSortOrder);
+
+        // 4. Hiển thị dialog
+        int result = JOptionPane.showConfirmDialog(this, panel, "Tùy chọn sắp xếp Tác giả",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+        // 5. Xử lý kết quả
+        if (result == JOptionPane.OK_OPTION) {
+            // Lấy giá trị mới
+            if (cmbSortBy.getSelectedIndex() == 0) {
+                currentSortBy = "authorName"; //
+            } else {
+                currentSortBy = "bookCount"; //
+            }
+
+            if (cmbSortOrder.getSelectedIndex() == 0) {
+                currentSortOrder = "ASC";
+            } else {
+                currentSortOrder = "DESC";
+            }
+
+            // Reset về trang 1 và cập nhật
+            currentBookPage = 1;
+            updateAuthorListView(); // Gọi hàm cập nhật của TÁC GIẢ
+        }
+    }
     public static void main(String[] args) {
         // Giữ nguyên main này nếu muốn Trang Chủ chạy đầu tiên
         // Xóa đi nếu muốn LoginForm chạy đầu tiên
         SwingUtilities.invokeLater(() -> new LibraryHomePageView());
     }
 }
+
