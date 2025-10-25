@@ -32,11 +32,12 @@ import java.awt.Component;
 public class SachEditDialog extends JDialog {
 
     // Các trường nhập liệu
-    private JTextField txtMaSach, txtTenSach, txtTacGia, txtNhaXuatBan, txtNamXuatBan, txtSoLuong, txtDuongDanAnh, txtDuongDanXemTruoc;
+    // Sửa: Đổi tên biến txtTacGia để rõ ràng hơn (Optional)
+    private JTextField txtMaSach, txtTenSach, txtTenTacGia, txtNhaXuatBan, txtNamXuatBan, txtSoLuong, txtDuongDanAnh, txtDuongDanXemTruoc;
     private JTextArea txtMoTa;
-    
+
     private JButton btnLuu, btnHuy;
-    
+
     private SachDAO sachDAO;
     private Sach sachToEdit;
     private boolean isEditMode = false;
@@ -44,13 +45,13 @@ public class SachEditDialog extends JDialog {
 
     public SachEditDialog(JFrame parent, SachDAO dao, Sach sachToEdit) {
         super(parent, "Quản lý Sách", true);
-        
+
         this.sachDAO = dao;
         this.sachToEdit = sachToEdit;
         this.isEditMode = (sachToEdit != null);
 
         initUI();
-        
+
         if (isEditMode) {
             setTitle("Sửa Thông Tin Sách");
             populateFields();
@@ -64,7 +65,7 @@ public class SachEditDialog extends JDialog {
 
     private void initUI() {
         setLayout(new BorderLayout(10, 10));
-        
+
         // Thay đổi GridLayout thành 9 hàng (cho 9 thuộc tính)
         JPanel fieldsPanel = new JPanel(new GridLayout(9, 2, 10, 10));
         fieldsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -77,9 +78,10 @@ public class SachEditDialog extends JDialog {
         txtTenSach = new JTextField();
         fieldsPanel.add(txtTenSach);
 
+        // Giữ nguyên Label là "Tác Giả", nhưng biến là txtTenTacGia
         fieldsPanel.add(new JLabel("Tác Giả:"));
-        txtTacGia = new JTextField();
-        fieldsPanel.add(txtTacGia);
+        txtTenTacGia = new JTextField();
+        fieldsPanel.add(txtTenTacGia);
 
         fieldsPanel.add(new JLabel("Nhà Xuất Bản:"));
         txtNhaXuatBan = new JTextField();
@@ -135,13 +137,13 @@ public class SachEditDialog extends JDialog {
         btnHuy = new JButton("Hủy");
         buttonPanel.add(btnLuu);
         buttonPanel.add(btnHuy);
-        
+
         add(buttonPanel, BorderLayout.SOUTH);
 
         // --- Xử lý sự kiện ---
         btnHuy.addActionListener(e -> dispose());
         btnLuu.addActionListener(e -> saveSach());
-        
+
         // Gắn sự kiện cho 3 nút tải file
         btnChonAnh.addActionListener(e -> chonVaCopyFile("image"));
         btnTaiLenPdf.addActionListener(e -> chonVaCopyFile("pdf"));
@@ -155,13 +157,14 @@ public class SachEditDialog extends JDialog {
         txtMaSach.setText(sachToEdit.getMaSach());
         txtMaSach.setEditable(false);
         txtTenSach.setText(sachToEdit.getTenSach());
-        txtTacGia.setText(sachToEdit.getTacGia());
+        // Sửa: Lấy maTacGia (chính là tên) hiển thị vào ô txtTenTacGia
+        txtTenTacGia.setText(sachToEdit.getMaTacGia());
         txtNhaXuatBan.setText(sachToEdit.getNhaXuatBan());
         txtNamXuatBan.setText(String.valueOf(sachToEdit.getNamXuatBan()));
         txtSoLuong.setText(String.valueOf(sachToEdit.getSoLuong()));
         txtDuongDanAnh.setText(sachToEdit.getDuongDanAnh());
         txtMoTa.setText(sachToEdit.getMoTa());
-        txtDuongDanXemTruoc.setText(sachToEdit.getDuongDanXemTruoc()); // Thêm dòng này
+        txtDuongDanXemTruoc.setText(sachToEdit.getDuongDanXemTruoc());
     }
 
     /**
@@ -175,18 +178,25 @@ public class SachEditDialog extends JDialog {
             JOptionPane.showMessageDialog(this, "Mã sách và Tên sách không được để trống!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
+
         int namXB = 0;
         int soLuong = 0;
         try {
-            if (!txtNamXuatBan.getText().trim().isEmpty()) {
-                namXB = Integer.parseInt(txtNamXuatBan.getText().trim());
+            String namXBStr = txtNamXuatBan.getText().trim();
+            if (!namXBStr.isEmpty()) {
+                 namXB = Integer.parseInt(namXBStr);
+                 // Có thể thêm kiểm tra năm hợp lệ (ví dụ: không quá tương lai)
             }
-            if (!txtSoLuong.getText().trim().isEmpty()) {
-                soLuong = Integer.parseInt(txtSoLuong.getText().trim());
+             String soLuongStr = txtSoLuong.getText().trim();
+            if (!soLuongStr.isEmpty()) {
+                soLuong = Integer.parseInt(soLuongStr);
+                if (soLuong < 0) {
+                     JOptionPane.showMessageDialog(this, "Số lượng không được là số âm!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                     return;
+                }
             }
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Năm xuất bản và Số lượng phải là số!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Năm xuất bản và Số lượng phải là số nguyên hợp lệ!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -194,15 +204,19 @@ public class SachEditDialog extends JDialog {
         Sach s = new Sach();
         s.setMaSach(maSach);
         s.setTenSach(tenSach);
-        s.setTacGia(txtTacGia.getText().trim());
+
+        // Sửa: Lấy tên từ txtTenTacGia và set vào maTacGia của đối tượng Sach
+        String tenTacGiaNhap = txtTenTacGia.getText().trim();
+        s.setMaTacGia(tenTacGiaNhap); // DAO sẽ dùng giá trị này
+
         s.setNhaXuatBan(txtNhaXuatBan.getText().trim());
         s.setNamXuatBan(namXB);
         s.setSoLuong(soLuong);
-        s.setDuongDanAnh(txtDuongDanAnh.getText().trim()); // Ảnh bìa
-        s.setMoTa(txtMoTa.getText().trim());               // Mô tả .txt
-        s.setDuongDanXemTruoc(txtDuongDanXemTruoc.getText().trim()); // Đọc thử .pdf
+        s.setDuongDanAnh(txtDuongDanAnh.getText().trim());
+        s.setMoTa(txtMoTa.getText().trim());
+        s.setDuongDanXemTruoc(txtDuongDanXemTruoc.getText().trim());
 
-        // 3. Gọi DAO
+        // 3. Gọi DAO (SachDAO sẽ tự động xử lý việc thêm tác giả vào bảng TACGIA nếu cần)
         try {
             boolean success;
             if (isEditMode) {
@@ -215,12 +229,13 @@ public class SachEditDialog extends JDialog {
             if (success) {
                 JOptionPane.showMessageDialog(this, (isEditMode ? "Cập nhật" : "Thêm") + " sách thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
                 this.saveSuccess = true;
-                dispose(); 
+                dispose();
             } else {
-                JOptionPane.showMessageDialog(this, (isEditMode ? "Cập nhật" : "Thêm") + " sách thất bại. (Trùng Mã Sách?)", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                // SachDAO đã in lỗi cụ thể (trùng mã sách, lỗi FK,...) ra console
+                JOptionPane.showMessageDialog(this, (isEditMode ? "Cập nhật" : "Thêm") + " sách thất bại. (Xem console để biết chi tiết)", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Lỗi CSDL: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Lỗi không xác định: " + e.getMessage(), "Lỗi nghiêm trọng", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
     }
@@ -235,7 +250,7 @@ public class SachEditDialog extends JDialog {
     // =================================================================
     // ============ PHƯƠNG THỨC TẢI FILE ==============================
     // =================================================================
-    
+
     /**
      * Hàm chung để chọn file (ảnh hoặc pdf) và copy vào thư mục project
      * @param fileType "image" hoặc "pdf"
@@ -261,20 +276,20 @@ public class SachEditDialog extends JDialog {
             subFolder = "previews"; // Thư mục lưu file pdf
             targetField = txtDuongDanXemTruoc;
         }
-        
+
         fileChooser.setFileFilter(filter);
 
         int result = fileChooser.showOpenDialog(this);
-        
+
         if (result == JFileChooser.APPROVE_OPTION) {
             try {
                 File fileDaChon = fileChooser.getSelectedFile();
-                
+
                 // 1. Lấy thư mục gốc của project
                 Path thuMucProject = Paths.get(System.getProperty("user.dir"));
                 // Tạo đường dẫn đến thư mục con (images hoặc previews)
-                Path thuMucLuuTru = thuMucProject.resolve(subFolder); 
-                
+                Path thuMucLuuTru = thuMucProject.resolve(subFolder);
+
                 // 2. Tạo thư mục con nếu chưa có
                 if (!Files.exists(thuMucLuuTru)) {
                     Files.createDirectories(thuMucLuuTru);
@@ -284,12 +299,16 @@ public class SachEditDialog extends JDialog {
                 Path fileDich = thuMucLuuTru.resolve(fileDaChon.getName());
                 Files.copy(fileDaChon.toPath(), fileDich, StandardCopyOption.REPLACE_EXISTING);
 
-                // 4. Lấy đường dẫn TƯƠNG ĐỐI
-                String duongDanTuongDoi = subFolder + "/" + fileDaChon.getName();
-                
+                // 4. Lấy đường dẫn TƯƠNG ĐỐI (quan trọng!)
+                // Sử dụng Path.relativize để đảm bảo đường dẫn đúng trên các HĐH
+                Path duongDanTuongDoiPath = thuMucProject.relativize(fileDich);
+                // Chuyển sang chuỗi và chuẩn hóa dấu phân cách (thường dùng / cho lưu trữ)
+                String duongDanTuongDoi = duongDanTuongDoiPath.toString().replace(File.separatorChar, '/');
+
+
                 // 5. Gán đường dẫn tương đối vào ô text
                 targetField.setText(duongDanTuongDoi);
-                
+
             } catch (IOException ex) {
                 ex.printStackTrace();
                 JOptionPane.showMessageDialog(this, "Lỗi khi lưu file: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
@@ -306,17 +325,17 @@ public class SachEditDialog extends JDialog {
         fileChooser.setFileFilter(new FileNameExtensionFilter("Tệp văn bản (*.txt)", "txt"));
 
         int result = fileChooser.showOpenDialog(this);
-        
+
         if (result == JFileChooser.APPROVE_OPTION) {
             try {
                 File fileDaChon = fileChooser.getSelectedFile();
-                
+
                 // Đọc toàn bộ nội dung file (dùng UTF-8 để hỗ trợ tiếng Việt)
                 String noiDung = Files.readString(fileDaChon.toPath(), StandardCharsets.UTF_8);
-                
+
                 // Gán nội dung vào ô mô tả
                 txtMoTa.setText(noiDung);
-                
+
             } catch (IOException ex) {
                 ex.printStackTrace();
                 JOptionPane.showMessageDialog(this, "Lỗi khi đọc file .txt: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
