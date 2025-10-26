@@ -27,3 +27,44 @@ ADD CONSTRAINT FK_Sach_TacGia_Ten FOREIGN KEY (tacGia) REFERENCES TACGIA(tenTacG
     ON DELETE SET NULL -- Nếu xóa tác giả, sách sẽ có tacGia là NULL
     ON UPDATE CASCADE; -- Nếu tên tác giả (khóa chính) thay đổi, cập nhật trong sách
 GO
+-- các lệnh tạo bảng bộ sưu tập có 2 bảng tạo lần lượt từng bảng nhá
+/* * Bảng 5: BOSUUTAP
+ * Lưu trữ thông tin của các bộ sưu tập (ví dụ: "Sách mới", "Văn học Kinh điển")
+ */
+CREATE TABLE BOSUUTAP (
+    maBoSuuTap INT IDENTITY(1,1) PRIMARY KEY,
+    -- IDENTITY(1,1) tự động tạo ID tăng dần (1, 2, 3...)
+    
+    tenBoSuuTap NVARCHAR(255) NOT NULL,
+    -- Tên hiển thị của bộ sưu tập
+    
+    moTa NVARCHAR(MAX) NULL
+    -- Mô tả chi tiết (tùy chọn)
+);
+
+/* * Bảng 6: SACH_BOSUUTAP
+ * Bảng trung gian để tạo quan hệ Nhiều-Nhiều (Một sách có thể ở nhiều BST, 
+ * và một BST có thể chứa nhiều sách)
+ */
+CREATE TABLE SACH_BOSUUTAP (
+    maSach NVARCHAR(20) NOT NULL,
+    -- Phải trùng kiểu dữ liệu với cột 'maSach' trong bảng 'SACH'
+    
+    maBoSuuTap INT NOT NULL,
+    -- Phải trùng kiểu dữ liệu với cột 'maBoSuuTap' trong bảng 'BOSUUTAP'
+    
+    -- 1. Tạo Khóa chính phức hợp:
+    -- Đảm bảo một cuốn sách không thể bị thêm 2 lần vào CÙNG MỘT bộ sưu tập
+    PRIMARY KEY (maSach, maBoSuuTap),
+    
+    -- 2. Tạo Khóa ngoại (Foreign Keys)
+    -- Liên kết đến bảng SACH
+    CONSTRAINT FK_Sach_BST_Sach FOREIGN KEY (maSach)
+        REFERENCES SACH(maSach)
+        ON DELETE CASCADE, -- Nếu sách bị xóa, liên kết này cũng bị xóa
+        
+    -- Liên kết đến bảng BOSUUTAP
+    CONSTRAINT FK_Sach_BST_BoSuuTap FOREIGN KEY (maBoSuuTap)
+        REFERENCES BOSUUTAP(maBoSuuTap)
+        ON DELETE CASCADE -- Nếu bộ sưu tập bị xóa, liên kết này cũng bị xóa
+);
