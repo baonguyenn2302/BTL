@@ -1,70 +1,82 @@
 CREATE TABLE TACGIA (
-    maTacGia VARCHAR(255) PRIMARY KEY NOT NULL, -- Khóa chính
-    tenTacGia NVARCHAR(255) NOT NULL,          -- Tên tác giả (để hiển thị, có thể khác maTacGia sau này)
-    email VARCHAR(255) NULL,                   -- Email (có thể null)
-    sdt VARCHAR(20) NULL,                      -- Số điện thoại (có thể null)
-    trinhDoChuyenMon NVARCHAR(MAX) NULL,       -- Trình độ chuyên môn (có thể null, text dài)
-    chucDanh NVARCHAR(255) NULL                -- Chức danh (có thể null)
+    maTacGia NVARCHAR(50) PRIMARY KEY,
+    tenTacGia NVARCHAR(100) NOT NULL,
+    email NVARCHAR(100) NULL,
+    sdt NVARCHAR(20) NULL,
+    trinhDoChuyenMon NVARCHAR(255) NULL,
+    chucDanh NVARCHAR(100) NULL
 );
-GO
+CREATE TABLE DOCGIA (
+    maDocGia NVARCHAR(50) PRIMARY KEY,
+    hoTen NVARCHAR(100) NOT NULL,
+    ngaySinh DATE NULL,
+    email NVARCHAR(100) NULL,
+    diaChi NVARCHAR(255) NULL,
+    sdt NVARCHAR(20) NULL,
+    blocked BIT NOT NULL DEFAULT 0
+);
+CREATE TABLE SACH (
+    maSach NVARCHAR(50) PRIMARY KEY,
+    tenSach NVARCHAR(255) NOT NULL,
+    nhaXuatBan NVARCHAR(150) NULL,
+    namXuatBan INT NULL,
+    soLuong INT NOT NULL DEFAULT 0,
+    moTa NTEXT NULL,
+    duongDanAnh NVARCHAR(255) NULL,
+    viTri NVARCHAR(100) NULL,
+    ngayThem DATETIME NOT NULL DEFAULT GETDATE()
+);
+CREATE TABLE SACH_TACGIA (
+    maSach NVARCHAR(50) NOT NULL,
+    maTacGia NVARCHAR(50) NOT NULL,
+    
+    /* Khóa ngoại tham chiếu đến bảng SACH (tự động xóa link nếu sách bị xóa) */
+    CONSTRAINT FK_SachTacGia_Sach FOREIGN KEY (maSach) REFERENCES SACH(maSach) ON DELETE CASCADE,
+    
+    /* Khóa ngoại tham chiếu đến bảng TACGIA (tự động xóa link nếu tác giả bị xóa) */
+    CONSTRAINT FK_SachTacGia_TacGia FOREIGN KEY (maTacGia) REFERENCES TACGIA(maTacGia) ON DELETE CASCADE,
+    
+    /* Khóa chính tổ hợp: Đảm bảo 1 sách và 1 tác giả chỉ được liên kết 1 lần */
+    PRIMARY KEY (maSach, maTacGia)
+);
 
--- Phần 1: Chèn các tác giả duy nhất từ bảng SACH vào bảng TACGIA
--- Lệnh này sẽ bỏ qua nếu tên tác giả đã tồn tại trong TACGIA (do là khóa chính)
-INSERT INTO TACGIA (tenTacGia)
-SELECT DISTINCT tacGia
-FROM SACH
-WHERE tacGia IS NOT NULL AND tacGia <> ''
-AND tacGia NOT IN (SELECT tenTacGia FROM TACGIA); -- Chỉ thêm nếu chưa có
-GO
-
--- Phần 2: Tạo ràng buộc khóa ngoại trên bảng SACH
--- Đảm bảo cột SACH.tacGia có kiểu dữ liệu khớp với TACGIA.tenTacGia (NVARCHAR(255))
--- Nếu kiểu dữ liệu khác, bạn cần ALTER COLUMN trước khi thêm constraint.
--- Ví dụ: ALTER TABLE SACH ALTER COLUMN tacGia NVARCHAR(255) NULL; (chạy nếu cần)
-
-ALTER TABLE SACH
-ADD CONSTRAINT FK_Sach_TacGia_Ten FOREIGN KEY (tacGia) REFERENCES TACGIA(tenTacGia)
-    ON DELETE SET NULL -- Nếu xóa tác giả, sách sẽ có tacGia là NULL
-    ON UPDATE CASCADE; -- Nếu tên tác giả (khóa chính) thay đổi, cập nhật trong sách
-GO
--- các lệnh tạo bảng bộ sưu tập có 2 bảng tạo lần lượt từng bảng nhá
-/* * Bảng 5: BOSUUTAP
- * Lưu trữ thông tin của các bộ sưu tập (ví dụ: "Sách mới", "Văn học Kinh điển")
- */
+/* 1. Bảng chính lưu tên Bộ Sưu Tập */
 CREATE TABLE BOSUUTAP (
     maBoSuuTap INT IDENTITY(1,1) PRIMARY KEY,
-    -- IDENTITY(1,1) tự động tạo ID tăng dần (1, 2, 3...)
-    
     tenBoSuuTap NVARCHAR(255) NOT NULL,
-    -- Tên hiển thị của bộ sưu tập
-    
-    moTa NVARCHAR(MAX) NULL
-    -- Mô tả chi tiết (tùy chọn)
+    moTa NTEXT NULL
 );
-
-/* * Bảng 6: SACH_BOSUUTAP
- * Bảng trung gian để tạo quan hệ Nhiều-Nhiều (Một sách có thể ở nhiều BST, 
- * và một BST có thể chứa nhiều sách)
- */
-CREATE TABLE SACH_BOSUUTAP (
-    maSach NVARCHAR(20) NOT NULL,
-    -- Phải trùng kiểu dữ liệu với cột 'maSach' trong bảng 'SACH'
-    
+/* 2. Bảng trung gian (Nhiều-Nhiều) liên kết Sách và Bộ Sưu Tập */
+CREATE TABLE BOSUUTAP_SACH (
     maBoSuuTap INT NOT NULL,
-    -- Phải trùng kiểu dữ liệu với cột 'maBoSuuTap' trong bảng 'BOSUUTAP'
+    maSach NVARCHAR(50) NOT NULL,
     
-    -- 1. Tạo Khóa chính phức hợp:
-    -- Đảm bảo một cuốn sách không thể bị thêm 2 lần vào CÙNG MỘT bộ sưu tập
-    PRIMARY KEY (maSach, maBoSuuTap),
+    /* Khóa ngoại (tự động xóa link nếu BST bị xóa) */
+    CONSTRAINT FK_BSTSach_BoSuuTap FOREIGN KEY (maBoSuuTap) 
+        REFERENCES BOSUUTAP(maBoSuuTap) ON DELETE CASCADE,
     
-    -- 2. Tạo Khóa ngoại (Foreign Keys)
-    -- Liên kết đến bảng SACH
-    CONSTRAINT FK_Sach_BST_Sach FOREIGN KEY (maSach)
-        REFERENCES SACH(maSach)
-        ON DELETE CASCADE, -- Nếu sách bị xóa, liên kết này cũng bị xóa
-        
-    -- Liên kết đến bảng BOSUUTAP
-    CONSTRAINT FK_Sach_BST_BoSuuTap FOREIGN KEY (maBoSuuTap)
-        REFERENCES BOSUUTAP(maBoSuuTap)
-        ON DELETE CASCADE -- Nếu bộ sưu tập bị xóa, liên kết này cũng bị xóa
+    /* Khóa ngoại (tự động xóa link nếu Sách bị xóa) */
+    CONSTRAINT FK_BSTSach_Sach FOREIGN KEY (maSach) 
+        REFERENCES SACH(maSach) ON DELETE CASCADE,
+    
+    /* Khóa chính tổ hợp (đảm bảo 1 sách chỉ được thêm 1 lần vào 1 BST) */
+    PRIMARY KEY (maBoSuuTap, maSach)
+);
+ALTER TABLE BOSUUTAP
+ADD duongDanAnh NVARCHAR(255) NULL;
+
+CREATE TABLE MUONTRA (
+    maMuonTra INT IDENTITY(1,1) PRIMARY KEY, -- Mã phiếu mượn, tự động tăng
+    maDocGia NVARCHAR(50) NOT NULL,          -- Mã độc giả mượn sách
+    maSach NVARCHAR(50) NOT NULL,             -- Mã sách được mượn
+    ngayMuon DATETIME NOT NULL DEFAULT GETDATE(), -- Ngày mượn (mặc định là ngày giờ hiện tại)
+    ngayHenTra DATETIME NOT NULL,             -- Ngày hẹn trả
+    ngayTraThucTe DATETIME NULL,               -- Ngày trả thực tế (NULL nếu chưa trả)
+    trangThai NVARCHAR(50) NULL,             -- Trạng thái: "Đang mượn", "Đã trả", "Quá hạn"
+    
+    -- Khóa ngoại liên kết tới bảng DOCGIA
+    CONSTRAINT FK_MuonTra_DocGia FOREIGN KEY (maDocGia) REFERENCES DOCGIA(maDocGia),
+    
+    -- Khóa ngoại liên kết tới bảng SACH
+    CONSTRAINT FK_MuonTra_Sach FOREIGN KEY (maSach) REFERENCES SACH(maSach)
 );
