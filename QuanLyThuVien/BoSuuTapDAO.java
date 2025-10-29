@@ -56,6 +56,7 @@ public class BoSuuTapDAO {
                      "LEFT JOIN SACH_TACGIA st_tacgia ON s.maSach = st_tacgia.maSach " +
                      "LEFT JOIN TACGIA t ON st_tacgia.maTacGia = t.maTacGia " +
                      "WHERE s.maSach IN (SELECT maSach FROM BOSUUTAP_SACH WHERE maBoSuuTap = ?) " +
+                     "AND s.isArchived = 0 " +
                      "ORDER BY s.tenSach, t.tenTacGia";
 
         // Sử dụng lại logic join của SachDAO để nhóm tác giả
