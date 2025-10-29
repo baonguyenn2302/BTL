@@ -105,7 +105,8 @@ public class MuonTraDAO {
      */
     public boolean muonSach(MuonTra muonTra) throws SQLException, IllegalStateException {
         Connection conn = null;
-        String sqlInsertMuon = "INSERT INTO MUONTRA(maDocGia, maSach, ngayHenTra, trangThai) VALUES (?, ?, ?, ?)";
+        // Thay thế câu lệnh SQL cũ
+        String sqlInsertMuon = "INSERT INTO MUONTRA(maDocGia, maSach, ngayHenTra, trangThai, loaiMuon) VALUES (?, ?, ?, ?, ?)";
         String sqlUpdateSach = "UPDATE SACH SET soLuong = soLuong - 1 WHERE maSach = ?";
         String sqlCheckSach = "SELECT soLuong FROM SACH WHERE maSach = ?";
         String sqlCheckDocGia = "SELECT blocked FROM DOCGIA WHERE maDocGia = ?";
@@ -150,6 +151,7 @@ public class MuonTraDAO {
                 pstmtInsert.setString(2, muonTra.getSach().getMaSach());
                 pstmtInsert.setTimestamp(3, new Timestamp(muonTra.getNgayHenTra().getTime()));
                 pstmtInsert.setString(4, "Đang mượn"); // Trạng thái ban đầu
+                pstmtInsert.setString(5, muonTra.getLoaiMuon());
                 pstmtInsert.executeUpdate();
             }
 
