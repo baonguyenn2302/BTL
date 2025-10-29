@@ -51,6 +51,7 @@ import QuanLyThuVien.BoSuuTapEditDialog;
 import QuanLyThuVien.MuonTra;
 import QuanLyThuVien.MuonTraDAO;
 import QuanLyThuVien.MuonSachDialog;
+import com.sun.jdi.connect.spi.Connection;
 import javax.swing.JComboBox; // <<< NEW >>>
 // === KẾT THÚC IMPORT ===
 
@@ -119,6 +120,38 @@ public class AdminMainForm extends JFrame {
         tacGiaDAO = new TacGiaDAO();
         boSuuTapDAO = new BoSuuTapDAO();
         muonTraDAO = new MuonTraDAO(); // <<< NEW >>>
+        
+            // 1. Model cho Sách
+        String[] sachColumns = {"Mã Sách", "Tên Sách", "Tác giả", "Nhà XB", "Năm XB", "Số Lượng", "Vị trí", "Ngày Thêm"};
+        sachTableModel = new DefaultTableModel(sachColumns, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
+
+        // 2. Model cho Độc Giả
+        String[] docGiaColumns = {"Mã ĐG", "Họ Tên", "Ngày Sinh", "Email", "SĐT", "Địa Chỉ", "Trạng Thái"};
+        docGiaTableModel = new DefaultTableModel(docGiaColumns, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
+
+        // 3. Model cho Tác Giả
+        String[] tacGiaColumns = {"Mã Tác Giả", "Tên Tác Giả", "Email", "SĐT", "Chuyên Môn", "Chức Danh"};
+        tacGiaTableModel = new DefaultTableModel(tacGiaColumns, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
+
+        // 4. Model cho Mượn Trả
+        // (Bao gồm cả cột "Loại Mượn" chúng ta đã thêm ở bước trước)
+        String[] muonTraColumns = {"Mã Mượn", "Độc Giả", "Sách", "Ngày Mượn", "Ngày Hẹn Trả", "Ngày Trả", "Trạng Thái", "Loại Mượn"};
+        muonTraTableModel = new DefaultTableModel(muonTraColumns, 0) {
+             @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
+
+        // 5. Models cho Bộ Sưu Tập
+        boSuuTapListModel = new DefaultListModel<>();
+        String[] sachBSTColumns = {"Mã Sách", "Tên Sách", "Tác giả", "Năm XB"};
+        sachTrongBSTTableModel = new DefaultTableModel(sachBSTColumns, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
 
         // Header
         headerLabel = new JLabel("TRANG CHỦ QUẢN TRỊ VIÊN | Chào, " + this.currentUsername);
@@ -374,19 +407,28 @@ public class AdminMainForm extends JFrame {
         dialog.setVisible(true);
         if (dialog.isSaveSuccess()) loadSachData();
     }
+    // Thêm lại phương thức này vào bên trong class AdminMainForm
+
     private void xoaSach() {
         int row = sachTable.getSelectedRow();
-        if (row == -1) { JOptionPane.showMessageDialog(this, "Chọn sách để xóa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE); return; }
+        if (row == -1) { 
+            JOptionPane.showMessageDialog(this, "Chọn sách để xóa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE); 
+            return; 
+        }
+        
         String ma = sachTableModel.getValueAt(row, 0).toString();
         String ten = sachTableModel.getValueAt(row, 1).toString();
+        
         int confirm = JOptionPane.showConfirmDialog(this, "Xóa sách '" + ten + "' (Mã: " + ma + ")?\n"
-                + "CẢNH BÁO: Xóa sách sẽ xóa các liên kết tác giả và lịch sử mượn trả.",
+                + "CẢNH BÁO: Hành động này sẽ ẩn sách khỏi hệ thống nhưng vẫn giữ lịch sử mượn trả.", // Cập nhật thông báo
                 "Xác nhận", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                if (sachDAO.xoaSach(ma)) {
-                    JOptionPane.showMessageDialog(this, "Xóa thành công!");
-                    loadSachData();
+                // Đảm bảo bạn đang gọi sachDAO.xoaSach(ma) (đã sửa bằng Soft Delete)
+                if (sachDAO.xoaSach(ma)) { //
+                    JOptionPane.showMessageDialog(this, "Xóa (ẩn) sách thành công!");
+                    loadSachData(); // Tải lại bảng sách
                 } else {
                     JOptionPane.showMessageDialog(this, "Xóa thất bại.", "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
@@ -971,7 +1013,7 @@ public class AdminMainForm extends JFrame {
         panel.add(topPanel, BorderLayout.NORTH);
 
         // --- Center Panel: Bảng Mượn Trả ---
-        String[] columnNames = {"Mã Mượn", "Độc Giả", "Sách", "Ngày Mượn", "Ngày Hẹn Trả", "Ngày Trả", "Trạng Thái"};
+        String[] columnNames = {"Mã Mượn", "Độc Giả", "Sách", "Ngày Mượn", "Ngày Hẹn Trả", "Ngày Trả", "Trạng Thái", "Loại Mượn"};
         muonTraTableModel = new DefaultTableModel(columnNames, 0) {
              @Override public boolean isCellEditable(int row, int column) { return false; }
         };
@@ -1026,7 +1068,8 @@ public class AdminMainForm extends JFrame {
                     ngayMuonStr,
                     ngayHenTraStr,
                     ngayTraThucTeStr,
-                    mt.getTrangThai() // Lấy trạng thái đã được tính toán
+                    mt.getTrangThai(), // Lấy trạng thái đã được tính toán
+                    mt.getLoaiMuon()
                 });
             }
         } catch (Exception e) {
