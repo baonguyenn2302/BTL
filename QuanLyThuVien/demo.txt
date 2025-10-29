@@ -80,3 +80,14 @@ CREATE TABLE MUONTRA (
     -- Khóa ngoại liên kết tới bảng SACH
     CONSTRAINT FK_MuonTra_Sach FOREIGN KEY (maSach) REFERENCES SACH(maSach)
 );
+
+ALTER TABLE MUONTRA
+ADD loaiMuon NVARCHAR(50) NULL;
+
+ALTER TABLE SACH
+ADD isArchived BIT NOT NULL DEFAULT 0;
+-- (0 = Đang hoạt động, 1 = Đã lưu trữ/xóa)
+
+ALTER TABLE SACH
+ADD conLai INT NOT NULL DEFAULT 0;
+
