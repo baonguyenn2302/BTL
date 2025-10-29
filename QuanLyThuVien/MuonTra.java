@@ -14,7 +14,15 @@ public class MuonTra {
     private Date ngayHenTra;     // Ngày hẹn trả
     private Date ngayTraThucTe;  // Ngày trả thực tế (null nếu chưa trả)
     private String trangThai;    // Trạng thái: "Đang mượn", "Đã trả", "Quá hạn"
+    private String loaiMuon;
 
+    public void setLoaiMuon(String loaiMuon) {
+        this.loaiMuon = loaiMuon;
+    }
+
+    public String getLoaiMuon() {
+        return loaiMuon;
+    }
     // Constructors
     public MuonTra() {
     }
