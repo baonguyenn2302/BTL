@@ -25,6 +25,25 @@ public class Sach {
 
     // === THUỘC TÍNH MỚI THAY THẾ ===
     private List<TacGia> danhSachTacGia;
+    
+    private int conLai; // <<< THÊM THUỘC TÍNH MỚI
+
+    public int getConLai() {
+        return conLai;
+    }
+
+    public boolean isIsArchived() {
+        return isArchived;
+    }
+
+    public void setConLai(int conLai) {
+        this.conLai = conLai;
+    }
+
+    public void setIsArchived(boolean isArchived) {
+        this.isArchived = isArchived;
+    }
+    private boolean isArchived; // (Thuộc tính từ lần "xóa mềm")
 
     // --- Constructors ---
     public Sach() {
@@ -46,6 +65,7 @@ public class Sach {
         this.ngayThem = ngayThem;
         this.viTri = viTri;
         this.danhSachTacGia = (danhSachTacGia != null) ? danhSachTacGia : new ArrayList<>();
+        
     }
 
     // --- Getters and Setters (đã cập nhật) ---
