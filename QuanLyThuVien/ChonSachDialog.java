@@ -4,7 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Set; // <<< NEW
 import java.util.stream.Collectors;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -15,45 +15,77 @@ import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.BorderFactory;
 import javax.swing.JTextField;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import javax.swing.JFrame;
+import javax.swing.JComboBox; // <<< NEW
+import javax.swing.JLabel; // <<< NEW
+import javax.swing.JCheckBox; // <<< NEW
+import javax.swing.BoxLayout; // <<< NEW
+import javax.swing.ListCellRenderer; // <<< NEW
+import java.awt.Component; // <<< NEW
+import java.awt.Color; // <<< NEW
+import java.awt.Font; // <<< NEW
+import java.awt.event.MouseAdapter; // <<< NEW
+import java.awt.event.MouseEvent; // <<< NEW
 
 /**
- * Dialog (cửa sổ pop-up) để chọn nhiều Sách (có thanh tìm kiếm).
+ * Dialog (cửa sổ pop-up) để chọn nhiều Sách (Đã nâng cấp với Checkbox và Lọc).
  */
 public class ChonSachDialog extends JDialog {
 
     private JList<Sach> listSach;
     private DefaultListModel<Sach> listModel;
     private JTextField txtTimKiem;
+    private JComboBox<String> cbSearchType; // <<< NEW
+    private JButton btnTimKiem, btnXemTatCa; // <<< NEW
     private JButton btnOK, btnHuy;
-    private boolean confirmed = false;
     
+    private boolean confirmed = false;
     private SachDAO sachDAO;
-    private List<Sach> allSach;
+    private List<Sach> allSach; // Giữ danh sách đầy đủ để build kết quả
     private List<Sach> selectedSach = new ArrayList<>();
+    
+    // Dùng Set để quản lý trạng thái chọn (giữ trạng thái khi lọc)
+    private Set<String> selectedMaSachSet; // <<< NEW
 
     public ChonSachDialog(JFrame parent, SachDAO sachDAO, List<Sach> currentSelection) {
         super(parent, "Chọn Sách Thêm vào Bộ Sưu Tập", true);
         
         this.sachDAO = sachDAO;
         
-        setSize(500, 600);
+        // (NEW) Khởi tạo Set chứa các mã đã chọn
+        this.selectedMaSachSet = currentSelection.stream()
+                                          .map(Sach::getMaSach)
+                                          .collect(Collectors.toSet());
+        
+        setSize(550, 600);
         setLocationRelativeTo(parent);
         setLayout(new BorderLayout(10, 10));
 
-        // --- Thanh tìm kiếm ---
-        JPanel searchPanel = new JPanel(new BorderLayout());
+        // --- (NEW) Thanh tìm kiếm nâng cao ---
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
-        txtTimKiem = new JTextField("Tìm kiếm sách...");
-        searchPanel.add(txtTimKiem, BorderLayout.CENTER);
+        
+        // Hỗ trợ tìm kiếm theo các kiểu mà SachDAO.timKiemSachNangCao hỗ trợ
+        String[] searchTypes = {"Tất cả", "Nhan đề", "Tác giả", "Năm xuất bản", "Mã sách"};
+        cbSearchType = new JComboBox<>(searchTypes);
+        txtTimKiem = new JTextField(20);
+        btnTimKiem = new JButton("Tìm");
+        btnXemTatCa = new JButton("Xem tất cả");
+        
+        searchPanel.add(new JLabel("Tìm theo:"));
+        searchPanel.add(cbSearchType);
+        searchPanel.add(txtTimKiem);
+        searchPanel.add(btnTimKiem);
+        searchPanel.add(btnXemTatCa);
         add(searchPanel, BorderLayout.NORTH);
 
-        // --- Danh sách ---
+        // --- (UPDATED) Danh sách ---
         listModel = new DefaultListModel<>();
         listSach = new JList<>(listModel);
-        listSach.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        
+        // (NEW) Dùng Renderer tùy chỉnh để hiển thị Checkbox và thông tin Sách
+        listSach.setCellRenderer(new SachCheckboxRenderer(this.selectedMaSachSet));
+        listSach.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         
         JScrollPane scrollPane = new JScrollPane(listSach);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
@@ -70,67 +102,79 @@ public class ChonSachDialog extends JDialog {
         buttonPanel.add(btnHuy);
         add(buttonPanel, BorderLayout.SOUTH);
 
-        // --- Sự kiện ---
+        // --- (UPDATED) Sự kiện ---
         btnHuy.addActionListener(e -> dispose());
+        
         btnOK.addActionListener(e -> {
-            this.selectedSach = listSach.getSelectedValuesList();
+            // Lọc danh sách 'allSach' dựa trên 'selectedMaSachSet'
+            // Điều này đảm bảo chúng ta trả về đối tượng Sach đầy đủ
+            this.selectedSach = allSach.stream()
+                .filter(s -> selectedMaSachSet.contains(s.getMaSach()))
+                .collect(Collectors.toList());
+                
             this.confirmed = true;
             dispose();
         });
 
-        // Sự kiện tìm kiếm
-        txtTimKiem.addKeyListener(new KeyAdapter() {
+        // (NEW) Sự kiện cho các nút tìm kiếm
+        btnTimKiem.addActionListener(e -> filterSach());
+        btnXemTatCa.addActionListener(e -> loadAllSach());
+
+        // (NEW) Sự kiện click chuột để chọn/bỏ chọn checkbox
+        listSach.addMouseListener(new MouseAdapter() {
             @Override
-            public void keyReleased(KeyEvent e) {
-                filterSach(txtTimKiem.getText().trim());
+            public void mouseClicked(MouseEvent e) {
+                int index = listSach.locationToIndex(e.getPoint());
+                if (index != -1) {
+                    Sach s = listModel.getElementAt(index);
+                    String maSach = s.getMaSach();
+                    
+                    // Đảo ngược trạng thái trong Set
+                    if (selectedMaSachSet.contains(maSach)) {
+                        selectedMaSachSet.remove(maSach);
+                    } else {
+                        selectedMaSachSet.add(maSach);
+                    }
+                    
+                    // Vẽ lại item đó để cập nhật checkbox
+                    listSach.repaint(listSach.getCellBounds(index, index));
+                }
             }
         });
-        
-        // Đánh dấu các sách đã được chọn trước đó
-        preselectSach(currentSelection);
     }
     
+    /**
+     * Tải TOÀN BỘ sách và hiển thị
+     */
     private void loadAllSach() {
         this.allSach = sachDAO.getAllSach(); // Lấy tất cả sách
-        filterSach(""); // Hiển thị tất cả
+        listModel.clear();
+        for (Sach s : allSach) {
+            listModel.addElement(s);
+        }
     }
     
     /**
-     * Lọc danh sách sách dựa trên từ khóa
+     * Lọc danh sách sách dựa trên DAO
      */
-    private void filterSach(String keyword) {
+    private void filterSach() {
+        String keyword = txtTimKiem.getText().trim();
+        String searchType = (String) cbSearchType.getSelectedItem();
+
+        // Gọi hàm tìm kiếm nâng cao của DAO
+        List<Sach> results = sachDAO.timKiemSachNangCao(keyword, searchType);
+        
         listModel.clear();
-        String kwLower = keyword.toLowerCase();
-        for (Sach s : allSach) {
-            // Tìm theo tên sách hoặc mã sách
-            if (s.getTenSach().toLowerCase().contains(kwLower) || s.getMaSach().toLowerCase().contains(kwLower)) {
-                listModel.addElement(s); // Sach.toString() sẽ được gọi
-            }
+        for (Sach s : results) {
+            listModel.addElement(s);
         }
     }
 
     /**
-     * Tìm và chọn các sách đã có trong danh sách
+     * (DEPRECATED) Hàm preselectSach không còn cần thiết,
+     * vì logic đã được chuyển vào constructor.
      */
-    private void preselectSach(List<Sach> currentSelection) {
-        if (currentSelection == null || currentSelection.isEmpty()) {
-            return;
-        }
-
-        Set<String> selectedMaSach = currentSelection.stream()
-                                          .map(Sach::getMaSach)
-                                          .collect(Collectors.toSet());
-        
-        List<Integer> indicesToSelect = new ArrayList<>();
-        for (int i = 0; i < listModel.getSize(); i++) {
-            if (selectedMaSach.contains(listModel.getElementAt(i).getMaSach())) {
-                indicesToSelect.add(i);
-            }
-        }
-        
-        int[] selectedIndices = indicesToSelect.stream().mapToInt(Integer::intValue).toArray();
-        listSach.setSelectedIndices(selectedIndices);
-    }
+    // private void preselectSach(List<Sach> currentSelection) { ... }
 
     public boolean isConfirmed() {
         return confirmed;
@@ -138,5 +182,82 @@ public class ChonSachDialog extends JDialog {
 
     public List<Sach> getSelectedSach() {
         return selectedSach;
+    }
+    
+    // --- (NEW) Inner class để vẽ JCheckBox và thông tin Sách ---
+    
+    // --- (NEW) Inner class để vẽ JCheckBox và thông tin Sách ---
+    
+    class SachCheckboxRenderer extends JPanel implements ListCellRenderer<Sach> {
+        private JCheckBox checkBox;
+        private JLabel lblTenSach;
+        private JLabel lblTacGia;
+        private JLabel lblMaSach;
+        private Set<String> selectedMaSet;
+        
+        // <<< SỬA LỖI: Di chuyển infoPanel ra đây làm trường (field)
+        private JPanel infoPanel; 
+        
+        public SachCheckboxRenderer(Set<String> selectedMaSet) {
+            this.selectedMaSet = selectedMaSet;
+            setLayout(new BorderLayout(10, 5));
+            setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+            
+            checkBox = new JCheckBox();
+            
+            // Panel chứa thông tin
+            // <<< SỬA LỖI: Bỏ 'JPanel' ở đầu dòng này
+            infoPanel = new JPanel(); 
+            infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+            
+            lblTenSach = new JLabel();
+            lblTenSach.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            
+            lblTacGia = new JLabel();
+            lblTacGia.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+            
+            lblMaSach = new JLabel();
+            lblMaSach.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            lblMaSach.setForeground(Color.GRAY);
+            
+            infoPanel.add(lblTenSach);
+            infoPanel.add(lblTacGia);
+            infoPanel.add(lblMaSach);
+            
+            add(checkBox, BorderLayout.WEST);
+            add(infoPanel, BorderLayout.CENTER);
+        }
+        
+        @Override
+        public Component getListCellRendererComponent(JList<? extends Sach> list, Sach value, 
+                                                      int index, boolean isSelected, boolean cellHasFocus) {
+            
+            // Điền thông tin
+            lblTenSach.setText(value.getTenSach());
+            lblTacGia.setText("Tác giả: " + value.getTenTacGiaDisplay()); //
+            lblMaSach.setText("Mã: " + value.getMaSach() + " | SL: " + value.getSoLuong());
+            
+            // Đặt trạng thái checkbox
+            checkBox.setSelected(selectedMaSet.contains(value.getMaSach()));
+            
+            // Xử lý màu sắc khi được JList highlight (nhấn giữ chuột)
+            // <<< SỬA LỖI: Thêm infoPanel.setBackground/setForeground
+            if (isSelected) {
+                setBackground(list.getSelectionBackground());
+                setForeground(list.getSelectionForeground());
+                infoPanel.setBackground(list.getSelectionBackground());
+                infoPanel.setForeground(list.getSelectionForeground());
+            } else {
+                setBackground(list.getBackground());
+                setForeground(list.getForeground());
+                infoPanel.setBackground(list.getBackground());
+                infoPanel.setForeground(list.getForeground());
+            }
+            
+            setEnabled(list.isEnabled());
+            setOpaque(true);
+            
+            return this;
+        }
     }
 }
