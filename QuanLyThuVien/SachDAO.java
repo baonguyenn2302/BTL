@@ -102,6 +102,7 @@ public class SachDAO {
                      "FROM SACH s " +
                      "LEFT JOIN SACH_TACGIA st ON s.maSach = st.maSach " +
                      "LEFT JOIN TACGIA t ON st.maTacGia = t.maTacGia " +
+                     "WHERE s.isArchived = 0 "+
                      "ORDER BY s.tenSach, t.tenTacGia";
         return getSachInternal(sql);
     }
@@ -111,7 +112,7 @@ public class SachDAO {
                      "FROM SACH s " +
                      "LEFT JOIN SACH_TACGIA st ON s.maSach = st.maSach " +
                      "LEFT JOIN TACGIA t ON st.maTacGia = t.maTacGia " +
-                     "WHERE s.maSach = ? " +
+                     "WHERE s.maSach = ? AND s.isArchived = 0" +
                      "ORDER BY t.tenTacGia";
         List<Sach> results = getSachInternal(sql, maSach);
         return results.isEmpty() ? null : results.get(0);
@@ -273,17 +274,14 @@ public class SachDAO {
     /**
      * Xóa sách (Database đã có ON DELETE CASCADE)
      */
-    public boolean xoaSach(String maSach) {
-        // Do đã thiết lập ON DELETE CASCADE, CSDL sẽ tự động xóa các
-        // hàng liên quan trong SACH_TACGIA và MUONTRA
-        String sql = "DELETE FROM SACH WHERE maSach = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
+        public boolean xoaSach(String maSach) {
+        String sql = "UPDATE SACH SET isArchived = 1 WHERE maSach = ?";
+        try (Connection conn = (Connection) DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, maSach);
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) { 
-            // Nếu lỗi (ví dụ: MUONTRA không có ON DELETE CASCADE), nó sẽ báo ở đây
-            System.err.println("Lỗi xóa sách (FK constraint?): " + e.getMessage()); 
+            e.printStackTrace();
             return false; 
         }
     }
@@ -313,6 +311,7 @@ public class SachDAO {
                     break;
                 case "Tác giả":
                     sqlWhere.append("WHERE s.maSach IN (SELECT st.maSach FROM SACH_TACGIA st JOIN TACGIA t ON st.maTacGia = t.maTacGia WHERE UPPER(t.tenTacGia) LIKE ?)");
+                    sqlWhere.append(" AND s.isArchived = 0");
                     params.add(kwLike.toUpperCase());
                     break;
                 case "Năm xuất bản":
@@ -322,6 +321,7 @@ public class SachDAO {
                     break;
                 default: // Tìm tất cả
                     sqlWhere.append("WHERE (UPPER(s.tenSach) LIKE ? OR s.nhaXuatBan LIKE ? OR s.maSach LIKE ? OR s.viTri LIKE ? OR s.maSach IN (SELECT st.maSach FROM SACH_TACGIA st JOIN TACGIA t ON st.maTacGia = t.maTacGia WHERE UPPER(t.tenTacGia) LIKE ?))");
+                    sqlWhere.append(" AND s.isArchived = 0");
                     params.add(kwLike.toUpperCase());
                     params.add(kwLike);
                     params.add(kwLike);
