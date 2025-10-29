@@ -26,6 +26,7 @@ public class MuonSachDialog extends JDialog {
     private JComboBox<DocGia> cbDocGia;
     private JComboBox<Sach> cbSach;
     private JDateChooser dateChooserHenTra; // Dùng JCalendar
+    private JComboBox<String> cbLoaiMuon;
     private JButton btnXacNhan, btnHuy;
 
     private DocGiaDAO docGiaDAO;
@@ -47,64 +48,89 @@ public class MuonSachDialog extends JDialog {
         setLocationRelativeTo(parent);
     }
 
+    // Thay thế toàn bộ hàm initUI()
     private void initUI() {
-        setLayout(new BorderLayout(10, 10));
+    setLayout(new BorderLayout(10, 10));
 
-        JPanel fieldsPanel = new JPanel(new GridLayout(3, 2, 10, 10));
-        fieldsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    // Tăng GridLayout lên 4 hàng
+    JPanel fieldsPanel = new JPanel(new GridLayout(4, 2, 10, 10)); 
+    fieldsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // --- Chọn Độc Giả ---
-        fieldsPanel.add(new JLabel("Độc Giả:"));
-        cbDocGia = new JComboBox<>();
-        fieldsPanel.add(cbDocGia);
+    // --- Chọn Độc Giả ---
+    fieldsPanel.add(new JLabel("Độc Giả:"));
+    cbDocGia = new JComboBox<>();
+    fieldsPanel.add(cbDocGia);
 
-        // --- Chọn Sách ---
-        fieldsPanel.add(new JLabel("Sách:"));
-        cbSach = new JComboBox<>();
-        fieldsPanel.add(cbSach);
+    // --- Chọn Sách ---
+    fieldsPanel.add(new JLabel("Sách:"));
+    cbSach = new JComboBox<>();
+    fieldsPanel.add(cbSach);
 
-        // --- Chọn Ngày Hẹn Trả ---
-        fieldsPanel.add(new JLabel("Ngày Hẹn Trả:"));
-        dateChooserHenTra = new JDateChooser();
-        dateChooserHenTra.setDateFormatString("dd/MM/yyyy");
-        // Mặc định ngày hẹn trả là 7 ngày sau
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DAY_OF_MONTH, 7);
-        dateChooserHenTra.setDate(cal.getTime());
-        fieldsPanel.add(dateChooserHenTra);
+    // --- Chọn Ngày Hẹn Trả ---
+    fieldsPanel.add(new JLabel("Ngày Hẹn Trả:"));
+    dateChooserHenTra = new JDateChooser();
+    dateChooserHenTra.setDateFormatString("dd/MM/yyyy");
+    fieldsPanel.add(dateChooserHenTra);
 
+    // --- (NEW) Chọn Loại Mượn ---
+    fieldsPanel.add(new JLabel("Loại mượn:"));
+    cbLoaiMuon = new JComboBox<>(new String[]{"Mượn về nhà", "Mượn tại chỗ"});
+    fieldsPanel.add(cbLoaiMuon);
 
-        add(fieldsPanel, BorderLayout.CENTER);
+    add(fieldsPanel, BorderLayout.CENTER);
 
-        // --- Nút bấm ---
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnXacNhan = new JButton("Xác nhận mượn");
-        btnHuy = new JButton("Hủy");
-        buttonPanel.add(btnXacNhan);
-        buttonPanel.add(btnHuy);
-        add(buttonPanel, BorderLayout.SOUTH);
+    // --- Nút bấm ---
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    btnXacNhan = new JButton("Xác nhận mượn");
+    btnHuy = new JButton("Hủy");
+    buttonPanel.add(btnXacNhan);
+    buttonPanel.add(btnHuy);
+    add(buttonPanel, BorderLayout.SOUTH);
 
-        // --- Sự kiện ---
-        btnHuy.addActionListener(e -> dispose());
-        btnXacNhan.addActionListener(e -> {
-            try {
-                xacNhanMuon(); // Gọi hàm có thể ném SQLException
-            } catch (SQLException ex) {
-                // Xử lý lỗi SQLException ở đây (hiển thị thông báo)
-                JOptionPane.showMessageDialog(this, 
-                    "Lỗi cơ sở dữ liệu khi thực hiện mượn: " + ex.getMessage(), 
-                    "Lỗi nghiêm trọng", 
-                    JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace(); // In chi tiết lỗi ra console
-            } catch (IllegalStateException exState) {
-                // Bắt cả lỗi IllegalStateException (sách hết, độc giả khóa)
-                JOptionPane.showMessageDialog(this, 
-                    "Không thể mượn sách: " + exState.getMessage(), 
-                    "Lỗi nghiệp vụ", 
-                    JOptionPane.WARNING_MESSAGE);
-            }
-        });
-    }
+    // --- (NEW) Sự kiện cho Loại Mượn ---
+    cbLoaiMuon.addActionListener(e -> {
+        String loai = (String) cbLoaiMuon.getSelectedItem();
+        
+        if ("Mượn tại chỗ".equals(loai)) {
+            // TẮT ô chọn ngày
+            dateChooserHenTra.setEnabled(false);
+            // Tự động set ngày hẹn trả là 23:59:59 của ngày HÔM NAY
+            dateChooserHenTra.setDate(getEndOfDay(new Date())); 
+        } else { // "Mượn về nhà"
+            // MỞ lại ô chọn ngày
+            dateChooserHenTra.setEnabled(true);
+            // Set lại ngày mặc định (7 ngày sau)
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.DAY_OF_MONTH, 7);
+            dateChooserHenTra.setDate(cal.getTime());
+        }
+    });
+
+    // Kích hoạt sự kiện lần đầu để đảm bảo trạng thái đúng
+    cbLoaiMuon.setSelectedItem("Mượn về nhà");
+
+    // --- Sự kiện Nút bấm ---
+    btnHuy.addActionListener(e -> dispose());
+    btnXacNhan.addActionListener(e -> {
+        try {
+            xacNhanMuon();
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, 
+                "Lỗi cơ sở dữ liệu khi thực hiện mượn: " + ex.getMessage(), 
+                "Lỗi nghiêm trọng", 
+                JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        } catch (IllegalStateException exState) {
+            JOptionPane.showMessageDialog(this, 
+                "Không thể mượn sách: " + exState.getMessage(), 
+                "Lỗi nghiệp vụ", 
+                JOptionPane.WARNING_MESSAGE);
+        }
+    });
+    
+    // Tăng kích thước cửa sổ để vừa
+    setSize(450, 300); 
+}
 
     /**
      * Tải dữ liệu cho ComboBox Độc Giả và Sách
@@ -137,59 +163,64 @@ public class MuonSachDialog extends JDialog {
     /**
      * Xử lý khi nhấn nút "Xác nhận mượn"
      */
+    // Thay thế toàn bộ hàm xacNhanMuon()
     private void xacNhanMuon() throws SQLException {
-        DocGia selectedDocGia = (DocGia) cbDocGia.getSelectedItem();
-        Sach selectedSach = (Sach) cbSach.getSelectedItem();
-        Date ngayHenTra = dateChooserHenTra.getDate();
+    DocGia selectedDocGia = (DocGia) cbDocGia.getSelectedItem();
+    Sach selectedSach = (Sach) cbSach.getSelectedItem();
+    Date ngayHenTra = dateChooserHenTra.getDate();
+    String loaiMuon = (String) cbLoaiMuon.getSelectedItem();
 
-        // Validate
-        if (selectedDocGia == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn độc giả.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        if (selectedSach == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn sách.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        if (ngayHenTra == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn ngày hẹn trả.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        // Kiểm tra ngày hẹn trả phải sau ngày hiện tại
+    // 1. Validate
+    if (selectedDocGia == null || selectedSach == null || ngayHenTra == null) {
+        JOptionPane.showMessageDialog(this, "Vui lòng chọn đủ Độc giả, Sách và Ngày hẹn trả.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    // 2. Validate Ngày (chỉ kiểm tra nếu mượn về nhà)
+    if ("Mượn về nhà".equals(loaiMuon)) {
         if (ngayHenTra.before(new Date())) {
-             JOptionPane.showMessageDialog(this, "Ngày hẹn trả phải là một ngày trong tương lai.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-             return;
-        }
-
-
-        // Tạo đối tượng MuonTra
-        MuonTra newMuonTra = new MuonTra();
-        newMuonTra.setDocGia(selectedDocGia);
-        newMuonTra.setSach(selectedSach);
-        newMuonTra.setNgayHenTra(ngayHenTra);
-        // ngayMuon và trangThai sẽ được DAO xử lý
-
-        // Gọi DAO để thực hiện mượn
-        try {
-            if (muonTraDAO.muonSach(newMuonTra)) {
-                JOptionPane.showMessageDialog(this, "Mượn sách thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                this.borrowSuccess = true;
-                dispose(); // Đóng dialog
-            } else {
-                // Trường hợp này ít xảy ra vì đã có throw Exception
-                JOptionPane.showMessageDialog(this, "Mượn sách thất bại (Lỗi không xác định).", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (IllegalStateException ex) {
-            // Lỗi do sách hết hoặc độc giả bị khóa
-            JOptionPane.showMessageDialog(this, "Mượn sách thất bại: " + ex.getMessage(), "Lỗi", JOptionPane.WARNING_MESSAGE);
-        } catch (SQLException ex) {
-            // Lỗi CSDL nghiêm trọng
-             JOptionPane.showMessageDialog(this, "Lỗi cơ sở dữ liệu khi mượn sách: " + ex.getMessage(), "Lỗi nghiêm trọng", JOptionPane.ERROR_MESSAGE);
-             ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Ngày hẹn trả (về nhà) phải là một ngày trong tương lai.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            return;
         }
     }
 
+    // 3. Tạo đối tượng MuonTra
+    MuonTra newMuonTra = new MuonTra();
+    newMuonTra.setDocGia(selectedDocGia);
+    newMuonTra.setSach(selectedSach);
+    newMuonTra.setNgayHenTra(ngayHenTra); // Gán ngày đã được xử lý
+    newMuonTra.setLoaiMuon(loaiMuon);     // Gán loại mượn
+
+    // 4. Gọi DAO (đã được cập nhật ở Bước 3)
+    try {
+        if (muonTraDAO.muonSach(newMuonTra)) {
+            JOptionPane.showMessageDialog(this, "Mượn sách thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            this.borrowSuccess = true;
+            dispose();
+        } else {
+            JOptionPane.showMessageDialog(this, "Mượn sách thất bại (Lỗi không xác định).", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    } catch (IllegalStateException ex) {
+        JOptionPane.showMessageDialog(this, "Mượn sách thất bại: " + ex.getMessage(), "Lỗi", JOptionPane.WARNING_MESSAGE);
+    } catch (SQLException ex) {
+         JOptionPane.showMessageDialog(this, "Lỗi cơ sở dữ liệu khi mượn sách: " + ex.getMessage(), "Lỗi nghiêm trọng", JOptionPane.ERROR_MESSAGE);
+         ex.printStackTrace();
+    }
+}
+
     public boolean isBorrowSuccess() {
         return borrowSuccess;
+    }
+    /**
+ * Hàm tiện ích để lấy thời điểm cuối cùng trong ngày (23:59:59)
+ */
+    private Date getEndOfDay(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.set(Calendar.HOUR_OF_DAY, 23);
+        cal.set(Calendar.MINUTE, 59);
+        cal.set(Calendar.SECOND, 59);
+        cal.set(Calendar.MILLISECOND, 999);
+        return cal.getTime();
     }
 }
