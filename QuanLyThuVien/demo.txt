@@ -1,11 +1,50 @@
+/* 1. Bảng TACGIA (Không đổi) */
 CREATE TABLE TACGIA (
     maTacGia NVARCHAR(50) PRIMARY KEY,
     tenTacGia NVARCHAR(100) NOT NULL,
     email NVARCHAR(100) NULL,
     sdt NVARCHAR(20) NULL,
-    /* Đã BỎ CỘT trinhDoChuyenMon theo yêu cầu */
     chucDanh NVARCHAR(100) NULL
 );
+
+/* 2. Bảng SACH (Đã BỎ cột maTacGia) */
+CREATE TABLE SACH (
+    maSach NVARCHAR(50) PRIMARY KEY,
+    tenSach NVARCHAR(255) NOT NULL,
+    
+    /* --- ĐÃ BỎ CỘT maTacGia VÀ KHÓA NGOẠI TẠI ĐÂY --- */
+    
+    nhaXuatBan NVARCHAR(150) NULL,
+    namXuatBan INT NULL,
+    soLuong INT NOT NULL DEFAULT 0,
+    moTa NTEXT NULL,
+    duongDanAnh NVARCHAR(255) NULL,
+    viTri NVARCHAR(100) NULL,
+    ngayThem DATETIME NOT NULL DEFAULT GETDATE(),
+    isArchived BIT NOT NULL DEFAULT 0,
+    conLai INT NOT NULL DEFAULT 0
+);
+
+/* 3. Bảng TRUNG GIAN (MỚI) để liên kết Nhiều-Nhiều */
+CREATE TABLE SACH_TACGIA (
+    maSach NVARCHAR(50) NOT NULL,
+    maTacGia NVARCHAR(50) NOT NULL,
+    
+    /* Khóa ngoại trỏ đến SACH (tự động xóa link nếu Sách bị xóa) */
+    CONSTRAINT FK_SachTacGia_Sach FOREIGN KEY (maSach) 
+        REFERENCES SACH(maSach) ON DELETE CASCADE,
+        
+    /* Khóa ngoại trỏ đến TACGIA (tự động xóa link nếu Tác giả bị xóa) */
+    CONSTRAINT FK_SachTacGia_TacGia FOREIGN KEY (maTacGia) 
+        REFERENCES TACGIA(maTacGia) ON DELETE CASCADE,
+        
+    /* Khóa chính tổ hợp (đảm bảo 1 tác giả chỉ được gán 1 lần cho 1 sách) */
+    PRIMARY KEY (maSach, maTacGia)
+);
+
+
+/* --- CÁC BẢNG KHÁC GIỮ NGUYÊN --- */
+
 CREATE TABLE DOCGIA (
     maDocGia NVARCHAR(50) PRIMARY KEY,
     hoTen NVARCHAR(100) NOT NULL,
@@ -16,70 +55,32 @@ CREATE TABLE DOCGIA (
     blocked BIT NOT NULL DEFAULT 0
 );
 
-CREATE TABLE SACH (
-    maSach NVARCHAR(50) PRIMARY KEY,
-    tenSach NVARCHAR(255) NOT NULL,
-    
-    /* YÊU CẦU MỚI: Thêm maTacGia trực tiếp vào Sách */
-    /* Đặt là NOT NULL để bắt buộc phải có Tác giả khi tạo Sách */
-    maTacGia NVARCHAR(50) NOT NULL, 
-    
-    nhaXuatBan NVARCHAR(150) NULL,
-    namXuatBan INT NULL,
-    soLuong INT NOT NULL DEFAULT 0,
-    moTa NTEXT NULL,
-    duongDanAnh NVARCHAR(255) NULL,
-    viTri NVARCHAR(100) NULL,
-    ngayThem DATETIME NOT NULL DEFAULT GETDATE(),
-    
-    /* Tích hợp các cột 'ALTER' từ code cũ của bạn */
-    isArchived BIT NOT NULL DEFAULT 0,
-    conLai INT NOT NULL DEFAULT 0,
-    
-    /* YÊU CẦU MỚI: Khóa ngoại trỏ đến TACGIA */
-    /* Mặc định, SQL Server sẽ ngăn bạn xóa Tác giả nếu họ vẫn còn Sách */
-    CONSTRAINT FK_Sach_TacGia FOREIGN KEY (maTacGia) REFERENCES TACGIA(maTacGia)
-);
-
-/* 1. Bảng chính lưu tên Bộ Sưu Tập */
 CREATE TABLE BOSUUTAP (
     maBoSuuTap INT IDENTITY(1,1) PRIMARY KEY,
     tenBoSuuTap NVARCHAR(255) NOT NULL,
     moTa NTEXT NULL,
-    duongDanAnh NVARCHAR(255) NULL /* Tích hợp từ ALTER */
+    duongDanAnh NVARCHAR(255) NULL
 );
 
-/* 2. Bảng trung gian (Nhiều-Nhiều) liên kết Sách và Bộ Sưu Tập */
 CREATE TABLE BOSUUTAP_SACH (
     maBoSuuTap INT NOT NULL,
     maSach NVARCHAR(50) NOT NULL,
-    
-    /* Khóa ngoại (tự động xóa link nếu BST bị xóa) */
     CONSTRAINT FK_BSTSach_BoSuuTap FOREIGN KEY (maBoSuuTap) 
         REFERENCES BOSUUTAP(maBoSuuTap) ON DELETE CASCADE,
-    
-    /* Khóa ngoại (tự động xóa link nếu Sách bị xóa) */
     CONSTRAINT FK_BSTSach_Sach FOREIGN KEY (maSach) 
         REFERENCES SACH(maSach) ON DELETE CASCADE,
-    
-    /* Khóa chính tổ hợp (đảm bảo 1 sách chỉ được thêm 1 lần vào 1 BST) */
     PRIMARY KEY (maBoSuuTap, maSach)
 );
 
 CREATE TABLE MUONTRA (
-    maMuonTra INT IDENTITY(1,1) PRIMARY KEY, -- Mã phiếu mượn, tự động tăng
-    maDocGia NVARCHAR(50) NOT NULL,         -- Mã độc giả mượn sách
-    maSach NVARCHAR(50) NOT NULL,           -- Mã sách được mượn
-    ngayMuon DATETIME NOT NULL DEFAULT GETDATE(), -- Ngày mượn (mặc định là ngày giờ hiện tại)
-    ngayHenTra DATETIME NOT NULL,           -- Ngày hẹn trả
-    ngayTraThucTe DATETIME NULL,            -- Ngày trả thực tế (NULL nếu chưa trả)
-    trangThai NVARCHAR(50) NULL,            -- Trạng thái: "Đang mượn", "Đã trả", "Quá hạn"
-    loaiMuon NVARCHAR(50) NULL,             -- mượn tại chỗ hoặc mượn về nhà
-    
-    -- Khóa ngoại liên kết tới bảng DOCGIA
+    maMuonTra INT IDENTITY(1,1) PRIMARY KEY,
+    maDocGia NVARCHAR(50) NOT NULL,
+    maSach NVARCHAR(50) NOT NULL,
+    ngayMuon DATETIME NOT NULL DEFAULT GETDATE(),
+    ngayHenTra DATETIME NOT NULL,
+    ngayTraThucTe DATETIME NULL,
+    trangThai NVARCHAR(50) NULL,
+    loaiMuon NVARCHAR(50) NULL,
     CONSTRAINT FK_MuonTra_DocGia FOREIGN KEY (maDocGia) REFERENCES DOCGIA(maDocGia),
-    
-    -- Khóa ngoại liên kết tới bảng SACH
     CONSTRAINT FK_MuonTra_Sach FOREIGN KEY (maSach) REFERENCES SACH(maSach)
 );
-
