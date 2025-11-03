@@ -92,3 +92,43 @@ ADD isArchived BIT NOT NULL DEFAULT 0;
 
 ALTER TABLE BOSUUTAP
 DROP COLUMN moTa;
+CREATE TABLE TAIKHOAN (
+    tenDangNhap NVARCHAR(100) PRIMARY KEY,      -- Tên tài khoản (dùng khi đăng nhập)
+    matKhau NVARCHAR(256) NOT NULL,             -- Mật khẩu (hash SHA-256)
+    tenNguoiDung NVARCHAR(150) NOT NULL,        -- Tên người dùng (Tên hiển thị)
+    email NVARCHAR(100) NULL,                   -- Email người dùng
+    sdt NVARCHAR(20) NULL,                      -- SĐT người dùng
+    duongDanAnh NVARCHAR(255) NULL,             -- Ảnh người dùng (lưu đường dẫn file)
+    
+    -- Đặt 'admin' làm mặc định, vì dự án này chỉ có admin
+    quyen NVARCHAR(50) NOT NULL DEFAULT 'admin' 
+);
+-- Bước 1: Thêm cột mới 'nguoiTao' vào bảng MUONTRA
+ALTER TABLE MUONTRA
+ADD nguoiTao NVARCHAR(100) NULL; -- Phải cho phép NULL
+
+-- Bước 2: Thêm Khóa Ngoại (Foreign Key) với quy tắc "ON DELETE SET NULL"
+ALTER TABLE MUONTRA
+ADD CONSTRAINT FK_MuonTra_TaiKhoan_NguoiTao
+    FOREIGN KEY (nguoiTao)
+    REFERENCES TAIKHOAN(tenDangNhap)
+    ON DELETE SET NULL; -- <-- Quy tắc an toàn khi xóa tài khoản admin
+
+INSERT INTO TAIKHOAN (tenDangNhap, matKhau, tenNguoiDung, email, sdt, quyen)
+VALUES (
+    'admin', 
+    '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', -- Đây là hash SHA-256 của "admin123"
+    'Quản Trị Viên', 
+    'admin@thuvien.com', 
+    '0123456789', 
+    'admin'
+);
+
+ALTER TABLE TAIKHOAN
+ALTER COLUMN matKhau NVARCHAR(100) NOT NULL;
+GO
+
+UPDATE TAIKHOAN
+SET matKhau = 'admin123'
+WHERE tenDangNhap = 'admin';
+GO
