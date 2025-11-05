@@ -56,6 +56,7 @@ import java.util.Date;
 import javax.swing.ListCellRenderer;
 import javax.swing.DefaultListCellRenderer;
 import com.toedter.calendar.JDateChooser;
+import java.awt.Rectangle;
 public class MainFrame extends JFrame {
     private JPanel menuPanel;
     private JPanel mainContentPanel;
@@ -288,6 +289,8 @@ public class MainFrame extends JFrame {
         menuPanel.add(new JLabel());
     }
 
+    // HÃY XÓA TOÀN BỘ HÀM showPanel() CŨ CỦA BẠN VÀ THAY BẰNG HÀM NÀY
+    // 
     private void showPanel(String panelName) {
         mainContentPanel.removeAll();
         JPanel newPanel = new JPanel(new BorderLayout());
@@ -332,31 +335,68 @@ public class MainFrame extends JFrame {
                 dashboardPanel.add(widgetRowPanel, BorderLayout.NORTH);
 
                 // (1.B) Hàng Lưới Bộ Sưu Tập
-                // THAY ĐỔI: Dùng FlowLayout(FlowLayout.LEFT) để các ô tự ngắt dòng
-                tqCollectionGridPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10)); 
+                // <<< BẮT ĐẦU SỬA LỖI (Dùng WrapLayout + Scrollable) >>>
+                
+                // 1. Khởi tạo JPanel bằng một lớp con ẩn danh
+                //    Sử dụng WrapLayout MỚI và implement Scrollable
+                tqCollectionGridPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 10)) {
+                    
+                    @Override
+                    public Dimension getPreferredSize() {
+                        // Tính toán Kích thước Ưa thích dựa trên chiều rộng
+                        return getLayout().preferredLayoutSize(this);
+                    }
+                    
+                    public boolean getScrollableTracksViewportWidth() {
+                        // Quan trọng: Báo JScrollPane rằng chiều rộng 
+                        // của panel PHẢI khớp với JScrollPane (để wrap)
+                        return true;
+                    }
+
+                    public boolean getScrollableTracksViewportHeight() {
+                        // Quan trọng: Báo JScrollPane rằng chiều cao 
+                        // là linh hoạt (để hiển thị thanh cuộn dọc)
+                        return false;
+                    }
+
+                    // --- Các phương thức Scrollable khác ---
+                    public Dimension getPreferredScrollableViewportSize() {
+                        return getPreferredSize();
+                    }
+                    public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+                        return 20; // Tốc độ cuộn
+                    }
+                    public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+                        return 60; // Tốc độ cuộn
+                    }
+                };
+                
                 tqCollectionGridPanel.setBackground(Color.WHITE);
                 tqCollectionGridPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
                 List<BoSuuTap> danhSachBST = boSuuTapDAO.getAllBoSuuTap();
                 for (BoSuuTap bst : danhSachBST) {
-                    // (createCollectionCell sẽ gọi showSachGridForBST, 
-                    //  hàm đó sẽ lật CardLayout)
                     JPanel cell = createCollectionCell(bst); 
                     tqCollectionGridPanel.add(cell);
                 }
-                
-                // THAY ĐỔI: Xóa bỏ panel 'gridWrapperBST' (vì nó gây kéo giãn)
-                // Thêm 'tqCollectionGridPanel' trực tiếp vào JScrollPane
+
+                // 2. JScrollPane
                 JScrollPane bstGridScroll = new JScrollPane(tqCollectionGridPanel); 
-                
-                // Gán Border (tiêu đề) cho JScrollPane
+
+                // 3. Cài đặt thanh cuộn
+                bstGridScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+                bstGridScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+                bstGridScroll.getVerticalScrollBar().setUnitIncrement(16); // Cuộn mượt hơn
+
                 bstGridScroll.setBorder(BorderFactory.createTitledBorder(
                     BorderFactory.createEtchedBorder(), "Các Bộ Sưu Tập", 
                     TitledBorder.LEFT, TitledBorder.TOP,
                     new Font("Arial", Font.BOLD, 14), new Color(0, 102, 153))
                 );
-                
+
                 dashboardPanel.add(bstGridScroll, BorderLayout.CENTER);
+                // <<< KẾT THÚC SỬA LỖI >>>
+               
                 
                 
                 
@@ -365,7 +405,7 @@ public class MainFrame extends JFrame {
                 bstSachGridPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
                 bstSachGridPanel.setBackground(Color.WHITE);
 
-                // (2.A) Panel Nút Quay lại & Tiêu đề
+                // (2.A) Panel Nút Quay lại & Tiêu đề (Giữ nguyên)
                 JPanel sachTopPanel = new JPanel(new BorderLayout(10, 5));
                 sachTopPanel.setBackground(Color.WHITE);
                 
@@ -381,19 +421,60 @@ public class MainFrame extends JFrame {
                 sachTopPanel.add(tqSachGridTitle, BorderLayout.CENTER);
                 
                 bstSachGridPanel.add(sachTopPanel, BorderLayout.NORTH);
-                // (2.B) Panel Lưới Sách (sẽ được điền sau)
-                // THAY ĐỔI: Dùng FlowLayout
-                tqSachGridPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+                
+                // (2.B) Grid Sách trong BST — (ĐÃ SỬA DÙNG WRAPLAYOUT)
+                
+                // === BẮT ĐẦU KHỐI CODE THAY THẾ ===
+                // (XÓA CODE "int colsSach = ..." VÀ "new GridLayout(...)" CŨ CỦA BẠN)
+                
+                // 1. Khởi tạo JPanel bằng một lớp con ẩn danh
+                //    Sử dụng WrapLayout MỚI và implement Scrollable
+                //    (Giống hệt cách làm của tqCollectionGridPanel)
+                tqSachGridPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, 10, 10)) {
+                    
+                    @Override
+                    public Dimension getPreferredSize() {
+                        // Tính toán Kích thước Ưa thích dựa trên chiều rộng
+                        return getLayout().preferredLayoutSize(this);
+                    }
+                    
+                    public boolean getScrollableTracksViewportWidth() {
+                        // Quan trọng: Báo JScrollPane rằng chiều rộng 
+                        // của panel PHẢI khớp với JScrollPane (để wrap)
+                        return true;
+                    }
+
+                    public boolean getScrollableTracksViewportHeight() {
+                        // Quan trọng: Báo JScrollPane rằng chiều cao 
+                        // là linh hoạt (để hiển thị thanh cuộn dọc)
+                        return false;
+                    }
+
+                    // --- Các phương thức Scrollable khác ---
+                    public Dimension getPreferredScrollableViewportSize() {
+                        return getPreferredSize();
+                    }
+                    public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+                        return 20; // Tốc độ cuộn
+                    }
+                    public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+                        return 60; // Tốc độ cuộn
+                    }
+                };
+                
                 tqSachGridPanel.setBackground(Color.WHITE);
                 tqSachGridPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+                // === KẾT THÚC KHỐI CODE THAY THẾ ===
+                
 
-                // THAY ĐỔI: Xóa bỏ panel 'gridWrapperSach'
-                // Thêm 'tqSachGridPanel' trực tiếp vào JScrollPane
                 JScrollPane sachGridScroll = new JScrollPane(tqSachGridPanel);
-                
+                sachGridScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+                sachGridScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+                sachGridScroll.getVerticalScrollBar().setUnitIncrement(16);
                 sachGridScroll.setBorder(BorderFactory.createEtchedBorder());
-                
+
                 bstSachGridPanel.add(sachGridScroll, BorderLayout.CENTER);
+                // <<< KẾT THÚC SỬA LỖI >>>
                 
                 // --- Thêm 2 Card vào Panel chính ---
                 tongQuanMainCardPanel.add(dashboardPanel, "DASHBOARD");
@@ -2796,11 +2877,8 @@ public class MainFrame extends JFrame {
             // 4. So sánh
             if (maSachToSelect.equals(maSachTrongBang)) {
                 
-                // 5. TÌM THẤY! Chọn (highlight) hàng đó
                 sachTable.setRowSelectionInterval(i, i);
                 
-                // 6. (Quan trọng) Cuộn JScrollPane để hàng được chọn
-                //    nằm trong tầm nhìn của người dùng
                 sachTable.scrollRectToVisible(sachTable.getCellRect(i, 0, true));
                 
                 // 7. Thoát vòng lặp vì đã tìm thấy
@@ -2808,17 +2886,5 @@ public class MainFrame extends JFrame {
             }
         }
     }
-//    public static void main(String[] args) {
-//        try {
-//            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-//                if ("Nimbus".equals(info.getName())) {
-//                    UIManager.setLookAndFeel(info.getClassName());
-//                    break;
-//                }
-//            }
-//        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
-//            System.out.println("Không thể thiết lập Nimbus L&F. Sử dụng mặc định.");
-//        }
-//        SwingUtilities.invokeLater(() -> new MainFrame().setVisible(true));
-//    }
+
 }
