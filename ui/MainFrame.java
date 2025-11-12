@@ -2878,19 +2878,6 @@ public class MainFrame extends JFrame {
             }
         }
     }
-//    public static void main(String[] args) {
-//        try {
-//            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-//                if ("Nimbus".equals(info.getName())) {
-//                    UIManager.setLookAndFeel(info.getClassName());
-//                    break;
-//                }
-//            }
-//        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
-//            System.out.println("Không thể thiết lập Nimbus L&F. Sử dụng mặc định.");
-//        }
-//        SwingUtilities.invokeLater(() -> new MainFrame().setVisible(true));
-//    }
-
 }
+
 
