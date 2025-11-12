@@ -45,6 +45,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.BorderFactory;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.DocumentFilter;
+import javax.swing.text.BadLocationException;
+import java.awt.Toolkit;
 
 /**
  * JDialog để Thêm (hoặc Sửa) Tác Giả.
