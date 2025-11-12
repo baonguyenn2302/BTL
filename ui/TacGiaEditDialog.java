@@ -49,6 +49,7 @@ import javax.swing.text.AbstractDocument;
 import javax.swing.text.DocumentFilter;
 import javax.swing.text.BadLocationException;
 import java.awt.Toolkit;
+import javax.swing.text.AttributeSet;
 
 /**
  * JDialog để Thêm (hoặc Sửa) Tác Giả.
@@ -274,3 +275,4 @@ public class TacGiaEditDialog extends JDialog {
         return saveSuccess;
     }
 }
+
