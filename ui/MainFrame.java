@@ -86,6 +86,7 @@ import java.util.Date;
 import javax.swing.ListCellRenderer;
 import javax.swing.DefaultListCellRenderer;
 import com.toedter.calendar.JDateChooser;
+import java.util.stream.Collectors;
 public class MainFrame extends JFrame {
     private JPanel menuPanel;
     private JPanel mainContentPanel;
@@ -2892,3 +2893,4 @@ public class MainFrame extends JFrame {
 //    }
 
 }
+
