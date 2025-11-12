@@ -585,6 +585,45 @@ public class MainFrame extends JFrame {
     }
 
     // === CÁC HÀM LOGIC SÁCH ===
+    private void updateTableData(List<Sach> sachList) {
+
+        sachTableModel.setRowCount(0); 
+
+
+
+        for (Sach sach : sachList) {
+
+            String tenTacGiaStr = sach.getDanhSachTacGia().stream()
+
+                .map(TacGia::getTenTacGia)
+
+                .collect(Collectors.joining(", "));
+
+
+
+            sachTableModel.addRow(new Object[]{
+
+                sach.getMaSach(),
+
+                sach.getTenSach(),
+
+                tenTacGiaStr,
+
+                sach.getNhaXuatBan(),
+
+                sach.getNamXuatBan(),
+
+                sach.getSoLuong(),
+
+                sach.getConLai(),
+
+                sach.getViTri()
+
+            });
+
+        }
+
+    }
     
     // HÀM NÀY ĐÃ ĐƯỢC SỬA (trong các hướng dẫn trước)
     private void themSach() throws Exception {
@@ -2851,4 +2890,5 @@ public class MainFrame extends JFrame {
 //        }
 //        SwingUtilities.invokeLater(() -> new MainFrame().setVisible(true));
 //    }
+
 }
