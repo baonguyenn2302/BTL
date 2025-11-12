@@ -92,6 +92,7 @@ import java.util.ArrayList;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
+import javax.swing.text.AbstractDocument;
 
 public class MainFrame extends JFrame {
     private JPanel menuPanel;
@@ -2885,4 +2886,5 @@ public class MainFrame extends JFrame {
         }
     }
 }
+
 
