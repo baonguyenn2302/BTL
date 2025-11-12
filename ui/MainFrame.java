@@ -89,10 +89,11 @@ import com.toedter.calendar.JDateChooser;
 import java.util.stream.Collectors;
 import java.util.Vector;
 import java.util.ArrayList;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DocumentFilter;
 import javax.swing.text.AbstractDocument;
+import javax.swing.text.DocumentFilter;
+import javax.swing.text.BadLocationException;
+import java.awt.Toolkit;
+import javax.swing.text.AttributeSet;
 
 public class MainFrame extends JFrame {
     private JPanel menuPanel;
@@ -2886,5 +2887,6 @@ public class MainFrame extends JFrame {
         }
     }
 }
+
 
 
